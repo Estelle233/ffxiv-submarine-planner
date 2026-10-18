@@ -1,9 +1,6 @@
 # ffxiv-submarine-planner
 # 🚢 FF14 部队潜水艇懒人管家 & 配装航线规划器 (Lv.1 ~ Lv.145)
 
-[![FFXIV Patch](https://img.shields.io/badge/FFXIV-Patch_7.x_(Lv.145)-38bdf8?style=flat-square)](https://github.com/Estelle233/ffxiv-潜艇规划器)
-[![License](https://img.shields.io/badge/Zero_Dependency-纯前端单文件-10b981?style=flat-square)](https://github.com/Estelle233/ffxiv-潜艇规划器)
-[![Responsive](https://img.shields.io/badge/UI-电脑%2F平板%2F手机全端适配-f59e0b?style=flat-square)](https://github.com/Estelle233/ffxiv-潜艇规划器)
 
 一个专为《最终幻想14》（FFXIV）部队工房打造的全自动潜水艇配装与练级/打捞航线规划工具。  
 不同于传统的固定配件排表工具，本工具支持**根据当前潜艇等级与已开启海图节点，毫秒级同步遍历「部件组合 × 节点路径」**，直接输出**最优/ 次优/ 再次优**方案，并自带四艘潜艇的实时出航倒计时与一键结算自动升级功能。
