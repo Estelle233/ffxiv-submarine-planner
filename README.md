@@ -10,7 +10,7 @@
 ## 🌐 在线直接使用（无需下载）
 
 👉 **点击立即打开规划器：[https://Estelle233.github.io/ffxiv-submarine-planner/](https://Estelle233.github.io/ffxiv-submarine-planner/)**  
-*(提示：手机与 iPad 用户用 Safari / Chrome 打开上述链接后，可点击浏览器「分享」→「添加到主屏幕」，即可作为独立桌面 App 使用！)*
+*(提示：手机与 iPad 用户打开上述链接后，可点击浏览器「分享」→「添加到主屏幕」，即可作为独立桌面 App 使用！)*
 
 ---
 
