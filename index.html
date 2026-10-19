@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>FF14 部队潜水艇全自动管家与配装航线规划器 v1.1</title>
+<title>FF14 部队潜水艇全自动管家与配装航线规划器 v1.2</title>
 <style>
   :root {
     --bg:#0f172a; --card:#1e293b; --panel:#0b1120; --bd:#334155;
@@ -51,7 +51,6 @@
     font-weight:bold; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:12.5px;
   }
 
-  /* 顶部收艇提醒设置栏 */
   .alarm-bar {
     background:var(--panel); border:1px solid var(--bd); border-radius:9px;
     padding:9px 13px; margin-bottom:14px; display:flex; justify-content:space-between;
@@ -61,7 +60,6 @@
   .alarm-chk { display:inline-flex; align-items:center; gap:5px; cursor:pointer; color:var(--txt); user-select:none; }
   .alarm-chk input { width:15px; height:15px; margin:0; accent-color:var(--blu); }
 
-  /* 四艘潜艇船坞 */
   .fleet-bar {
     display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));
     gap:10px; margin-bottom:14px; width:100%;
@@ -129,7 +127,6 @@
   .mobile-rank-list { display:none; flex-direction:column; gap:8px; max-height:580px; overflow-y:auto; width:100%; }
   .m-rank-item { background:var(--panel); border:1px solid var(--bd); border-radius:8px; padding:11px; width:100%; }
 
-  /* 可删除的掉落物历史标签 */
   .chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:7px; width:100%; }
   .chip {
     padding:4px 9px; border-radius:6px; font-size:12.5px; border:1px solid var(--bd);
@@ -149,7 +146,7 @@
   .drop-item { padding:7px 9px; border-bottom:1px solid #1e293b; font-size:12.5px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; border-radius:4px; gap:6px; flex-wrap:wrap; }
   .drop-item:hover, .drop-item:active { background:var(--card); }
 
-  /* ★ 五维多档独立色标：灰(未达标) / 绿(基础达标/二档) / 紫(三档过线/中阶Bonus) / 金(满档核心Bonus过线) */
+  /* 五维多档独立色标 */
   .st-no   { color:#64748b; font-weight:normal; }
   .st-grn  { color:#34d399; font-weight:bold; }
   .st-pur  { color:#c084fc; font-weight:bold; }
@@ -163,7 +160,6 @@
   .bn-5 { background:rgba(100,116,139,0.18); border:1px solid #475569; color:#94a3b8; padding:2px 6px; border-radius:4px; font-size:11.5px; display:inline-block; }
   .preview-banner { background:rgba(245,158,11,0.15); border:1px solid var(--gold); color:#fde047; padding:9px 11px; border-radius:8px; margin-bottom:11px; font-size:12.5px; display:none; word-break:break-word; }
 
-  /* 网页内返航提醒模态弹窗 */
   .modal-mask {
     position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:9999;
     display:none; align-items:center; justify-content:center; padding:16px;
@@ -204,7 +200,7 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>🚢 FF14 部队潜水艇管家 & 航线规划器 <small style="color:var(--grn);font-weight:normal;">v1.1 (收艇闹钟 · 智能标签 · 五维四色分档)</small></h1>
+    <h1>🚢 FF14 部队潜水艇管家 & 航线规划器 <small style="color:var(--grn);font-weight:normal;">v1.2 (综合均衡四维评分 · 收艇闹钟 · 智能标签 · 五维四色分档)</small></h1>
     <div class="head-btns">
       <button class="btn" style="border-color:var(--grn);color:var(--grn);" onclick="forceUpdateApp()" title="强制绕过浏览器缓存拉取最新版本，您的潜艇存档数据100%保留！">🔄 获取最新版本</button>
       <button class="btn" style="border-color:var(--blu);color:var(--blu);" onclick="downloadSelfHTML()">💾 下载离线HTML</button>
@@ -252,7 +248,7 @@
         </div>
         <div style="font-size:12px;color:var(--mut-light);margin-bottom:10px;background:var(--panel);padding:8px 10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;">
           <span>📈 距升下级差：<b id="remExpTxt" style="color:var(--gold)">0</b></span>
-          <span>五维色标：<span class="st-no">灰未达标</span> · <span class="st-grn">绿二档/达标</span> · <span class="st-pur">紫三档</span> · <span class="st-gold">金Bonus核心</span></span>
+          <span>五维色标：<span class="st-no">未达标</span> · <span class="st-grn">达标</span> · <span class="st-pur">良</span> · <span class="st-gold">优</span></span>
         </div>
 
         <div class="row">
@@ -271,7 +267,7 @@
           <div>
             <label>部件池范围</label>
             <select id="pool" onchange="document.getElementById('cRow').style.display=(this.value==='custom'?'block':'none');saveFleet();calc()">
-              <option value="economy" selected>💰 经济平民流 (1~145级最少部件一图到底)</option>
+              <option value="economy" selected>💰 经济平民流 (1111→1121→3113→1123/3124)</option>
               <option value="unmod">🔧 全部【不改配件】(零改全枚举)</option>
               <option value="common">📦 常用经典配装 (含4254/3124/改级)</option>
               <option value="all">👑 允许【全部配件 (含全改)】</option>
@@ -285,9 +281,10 @@
         </div>
         <div class="row">
           <div>
-            <label>优化排序目标 (默认少收艇)</label>
+            <label>优化排序目标 (默认综合均衡推荐)</label>
             <select id="mode" onchange="saveFleet();calc()">
-              <option value="tot" selected>🛌 少收艇优先 (单趟期望总经验最高)</option>
+              <option value="balanced" selected>🌟 综合均衡推荐 (兼顾总经验/效率/开图/主流部件)</option>
+              <option value="tot">🛌 少收艇优先 (单趟期望总经验最高)</option>
               <option value="exph">⚡ 每小时经验最高 (纯竞速 EXP/h)</option>
               <option value="surv">💎 探查达标优先 (打捞稀有物/掉宝)</option>
             </select>
@@ -360,9 +357,9 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th>部件组合 & 额外购置</th>
-                <th>五维 (<span class="st-gold">金Bonus</span>/<span class="st-pur">紫三档</span>/<span class="st-grn">绿二档</span>/<span class="st-no">灰未达</span>)</th>
-                <th>最佳节点顺序</th>
+                <th>部件组合 & 主流亲和</th>
+                <th>五维 (<span class="st-gold">优</span>/<span class="st-pur">良</span>/<span class="st-grn">达标</span>/<span class="st-no">未达标</span>)</th>
+                <th>最佳节点顺序 & 开图</th>
                 <th>航距</th>
                 <th>期望总经验 (含Bonus)</th>
                 <th>升级趟数</th>
@@ -404,20 +401,17 @@ const BO={1:[50,40,10,-20,15,5],2:[60,20,20,-15,15,9],3:[25,60,-15,20,15,12],4:[
 const BR={1:[20,20,20,20,20,5],2:[25,5,25,30,30,9],3:[0,25,20,45,40,12],4:[55,20,35,-15,50,14],5:[55,20,-5,30,60,17],'1改':[25,25,30,25,35,20],'2改':[30,10,30,35,40,20],'3改':[0,30,25,50,45,20],'4改':[60,20,35,-10,55,20],'5改':[60,20,-5,30,60,20]};
 const PNAMES = {'1':'鲨鱼','2':'甲鲎','3':'须鲸','4':'腔棘鱼','5':'希尔德拉','1改':'鲨改','2改':'甲改','3改':'须改','4改':'腔改','5改':'希改'};
 
-// 保持同一存储键，100%继承老用户潜艇数据
 const STORAGE_KEY = 'ff14_sub_fleet_v4_safe';
 let activeSubIdx = 0;
 let mustSet = new Set();
 let fleetState = null;
 
-// 强制绕过浏览器缓存拉取最新页面（100%保留用户的localStorage潜艇数据）
 function forceUpdateApp() {
   const url = new URL(window.location.href);
   url.searchParams.set('v', Date.now());
   window.location.replace(url.toString());
 }
 
-// 一键打包下载离线 HTML
 function downloadSelfHTML() {
   const cleanDoc = document.documentElement.cloneNode(true);
   const htmlContent = '<!DOCTYPE html>\n' + cleanDoc.outerHTML;
@@ -432,10 +426,9 @@ function downloadSelfHTML() {
 function getBlankState() {
   return {
     pool: "economy",
-    mode: "tot",
+    mode: "balanced",
     maxH: "48",
     unlockedByMap: {},
-    // 初始仅设 3 个高频预选词，留 7 个空位供用户添加
     dropTags: ["海底黏土", "炼金树脂", "经典眼镜"],
     alarmCfg: { sound: true, notify: false, modal: true },
     subs: [
@@ -454,7 +447,6 @@ function loadFleet() {
     if (!fleetState || !Array.isArray(fleetState.subs) || fleetState.subs.length !== 4) {
       fleetState = getBlankState();
     }
-    // 兼容旧存档无缝升级新字段
     if (!Array.isArray(fleetState.dropTags)) {
       fleetState.dropTags = ["海底黏土", "炼金树脂", "经典眼镜"];
     }
@@ -465,7 +457,7 @@ function loadFleet() {
     fleetState = getBlankState();
   }
   document.getElementById('pool').value = fleetState.pool || "economy";
-  document.getElementById('mode').value = fleetState.mode || "tot";
+  document.getElementById('mode').value = fleetState.mode || "balanced";
   document.getElementById('maxH').value = fleetState.maxH || "48";
   document.getElementById('almSound').checked = !!fleetState.alarmCfg.sound;
   document.getElementById('almNotify').checked = !!fleetState.alarmCfg.notify;
@@ -510,7 +502,6 @@ function restoreInitialFleet() {
   selectSub(activeSubIdx);
 }
 
-// ======= 1. 可删除/可自动保存的掉落物快捷标签系统 (上限10个) =======
 function renderDropTags() {
   const box = document.getElementById('dropTagsBox');
   const countTxt = document.getElementById('tagCountTxt');
@@ -529,7 +520,7 @@ function addDropTagSilent(kw, showAlertIfFull) {
   kw = (kw || '').trim();
   if (!kw) return;
   if (!Array.isArray(fleetState.dropTags)) fleetState.dropTags = [];
-  if (fleetState.dropTags.includes(kw)) return; // 已存在则不重复添加
+  if (fleetState.dropTags.includes(kw)) return;
   if (fleetState.dropTags.length >= 10) {
     if (showAlertIfFull) {
       alert('⚠️ 快捷预选词已满 10 个！请先点击下方部分旧标签右侧的「×」删除一些，再添加新物品。');
@@ -557,7 +548,6 @@ function removeDropTag(idx) {
   renderDropTags();
 }
 
-// ======= 3. 多模式收艇提醒与闹钟系统 (2s响铃 / 电脑通知 / 手机弹窗 / 导出系统闹钟) =======
 function onAlarmSettingChange(askNotifyPerm) {
   fleetState.alarmCfg = {
     sound: document.getElementById('almSound').checked,
@@ -576,13 +566,12 @@ function onAlarmSettingChange(askNotifyPerm) {
   saveFleet();
 }
 
-// 使用 Web Audio API 合成 2.0 秒悦耳和弦响铃 (零外部音频依赖，离线可用)
 function playBell2Seconds() {
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
-    const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50]; // C5-E5-G5-C6
+    const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50];
     notes.forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -602,9 +591,7 @@ function playBell2Seconds() {
 
 function triggerSubAlarm(subName, buildCode, routeStr) {
   const cfg = fleetState.alarmCfg || { sound: true, notify: false, modal: true };
-  if (cfg.sound) {
-    playBell2Seconds();
-  }
+  if (cfg.sound) playBell2Seconds();
   if (cfg.notify && 'Notification' in window && Notification.permission === 'granted') {
     try {
       new Notification(`🚢 ${subName} 已探索完毕返航！`, {
@@ -631,7 +618,6 @@ function testAlarmNow() {
   triggerSubAlarm('潜水艇-1 (测试提醒)', '1123', 'A → F → E');
 }
 
-// 导出 .ics 系统日历闹钟提醒 (支持 iOS / Android / Windows 系统级准点闹钟提醒)
 function exportVoyageICS(idx) {
   const s = fleetState.subs[idx];
   if (!s || !s.voyage) return;
@@ -676,7 +662,6 @@ function renderFleetBar() {
     const remExp = isUnset ? 0 : Math.max(0, s.maxExp - s.curExp);
     const isDone = s.voyage && (s.voyage.endTime <= now);
 
-    // 到点自动触发一次提醒
     if (isDone && !s.voyage.alerted) {
       s.voyage.alerted = true;
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(fleetState)); } catch(e){}
@@ -902,7 +887,6 @@ function onDropSearch() {
 }
 
 function selectDropNode(mid, code, kw) {
-  // 点击结果节点时自动将该搜索词加入快捷标签栏 (若满10个则提示)
   if (kw) addDropTagSilent(kw, true);
   const s = fleetState.subs[activeSubIdx];
   s.mapId = String(mid);
@@ -918,13 +902,6 @@ function selectDropNode(mid, code, kw) {
   calc();
 }
 
-// 严格对齐《蒜女心经》Bonus 期望公式
-// 1) 全属性三档过线 (探3 + 收3 + 恩): 期望 +75% (70~80%) -> 1档(金)
-// 2) 收集三档 + 恩惠过线 (收3 + 恩): 期望 +42.5% (40~45%) -> 2档(紫)
-// 3) 收集二档 + 恩惠过线 (收2 + 恩): 期望 +17.5% (15~20%) [若同时探3则为+27.5%] -> 3档(红)
-// 4) 探索三档 + 恩惠过线 (探3 + 恩): 期望 +15% -> 3档(红)
-// 5) 仅探索三档过线 (探3): 期望 +5% (或单项收2/收3无恩惠) -> 4档(绿)
-// 6) 未过线 (探索二档影响<5%忽略): +0% -> 5档(灰)
 function evalNodeBonusFast(surv, ret, fav, th) {
   const s2 = th[0], s3 = th[1], fReq = th[2], r2 = th[3], r3 = th[4];
   const favOk = fav >= fReq;
@@ -949,14 +926,57 @@ const BONUS_TIER_INFO = {
   5: { cls: 'bn-5', label: '5档: 基础无加成' }
 };
 
+// ★ 主流传家宝配装路线 (1111 → 1121 → 3113 → 1123/3123 → 3124) 亲和度评分 [0.0 ~ 1.0]
+const MAINSTREAM_EXACT = new Set(['1111', '1121', '3113', '1123', '3123', '3124']);
+function calcPartAffinity(a, b, c, d) {
+  const code = `${a}${b}${c}${d}`;
+  if (MAINSTREAM_EXACT.has(code)) return 1.00;
+  let score = 0.0;
+  if (a === '1' || a === '3') score += 0.22;
+  if (b === '1') score += 0.22;
+  if (c === '1' || c === '2') score += 0.22;
+  if (d === '1' || d === '3' || d === '4') score += 0.22;
+  if (!code.includes('改')) score += 0.05;
+  return Math.min(0.95, score);
+}
+
+// 计算某节点可开启的「尚未解锁/尚未进入的后续目标」数量与描述
+function evalNodeUnlockValue(nd, checkedSet, effLv) {
+  const ulkStr = nd[10];
+  if (!ulkStr) return { pts: 0, targets: [] };
+  const rawTargets = ulkStr.replace(/，/g, '、').replace(/,/g, '、').split('、').map(s => s.trim()).filter(Boolean);
+  let pts = 0;
+  let activeTargets = [];
+  for (let t of rawTargets) {
+    if (!checkedSet.has(t)) {
+      const isSpecial = t.includes('艇') || t.includes('海') || t.includes('洋');
+      // 特殊目标(潜艇槽位/下一海图)在等级接近该节点(±6级内)或刚好处于开荒期时赋予高优先级
+      if (isSpecial && (effLv > nd[2] + 6)) continue;
+      pts += isSpecial ? 1.5 : 1.0;
+      activeTargets.push(t);
+    }
+  }
+  return { pts, targets: activeTargets };
+}
+
 function getExtraPartsDesc(a, b, c, d) {
+  const code = `${a}${b}${c}${d}`;
+  if (MAINSTREAM_EXACT.has(code)) {
+    const slots = ['体','尾','首','桥'];
+    const arr = [a, b, c, d];
+    let extra = [];
+    for (let i = 0; i < 4; i++) {
+      if (arr[i] !== '1') extra.push(`${PNAMES[arr[i]]}${slots[i]}`);
+    }
+    return extra.length === 0 ? "★主流初始 (0额外购置)" : `★主流推荐 (${extra.join('+')})`;
+  }
   const slots = ['体','尾','首','桥'];
   const arr = [a, b, c, d];
   let extra = [];
   for (let i = 0; i < 4; i++) {
     if (arr[i] !== '1') extra.push(`${PNAMES[arr[i]]}${slots[i]}`);
   }
-  return extra.length === 0 ? "初始自带 (0额外购置)" : `仅换${extra.length}件: ${extra.join('+')}`;
+  return extra.length === 0 ? "初始自带 (0额外购置)" : `需换${extra.length}件: ${extra.join('+')}`;
 }
 
 function fmtT(sec) {
@@ -1015,10 +1035,6 @@ function cancelVoyage(idx) {
   saveFleet();
 }
 
-// ★ 2. 五维多档位独立色标 (灰 st-no / 绿 st-grn / 紫 st-pur / 金 st-gold)
-// - 探 (surv): 未过二档=灰 | 过二档(良)=绿 | 过三档(优,+5%Bonus)=紫 | 过三档+恩惠(+15%/+75%Bonus)=金！
-// - 收 (ret):  未过二档=灰 | 过二档(中量)=绿 | 过二档+恩惠(+18%Bonus)或单过三档=紫 | 过三档(大量)+恩惠(+43%/+75%Bonus)=金！
-// - 恩 (fav):  未过线=灰   | 仅恩惠过线=绿   | 配合收二过线(+18%Bonus)=紫         | 配合探三/收三过线触发高阶Bonus=金！
 function formatFiveStatsHTML(b, r, sec, maxSec) {
   let minSurvTier = 3, minRetTier = 3, allFavOk = true;
   for (let n of r.nds) {
@@ -1030,19 +1046,16 @@ function formatFiveStatsHTML(b, r, sec, maxSec) {
     if (fReq > 0 && b.fav < fReq) allFavOk = false;
   }
 
-  // 探索性能颜色档位
   let survCls = 'st-no', survTip = '探索未达标(一档)';
   if (minSurvTier === 3 && allFavOk) { survCls = 'st-gold'; survTip = '探索三档(优)+恩惠过线 (核心Bonus达标!)'; }
   else if (minSurvTier === 3) { survCls = 'st-pur'; survTip = '探索三档(优)过线 (+5% Bonus)'; }
   else if (minSurvTier === 2) { survCls = 'st-grn'; survTip = '探索二档(良)达标'; }
 
-  // 收集性能颜色档位
   let retCls = 'st-no', retTip = '收集未达标(一档)';
   if (minRetTier === 3 && allFavOk) { retCls = 'st-gold'; retTip = '收集三档(大量)+恩惠过线 (+43%~75%核心Bonus!)'; }
   else if (minRetTier === 3 || (minRetTier === 2 && allFavOk)) { retCls = 'st-pur'; retTip = minRetTier === 3 ? '收集三档(大量)过线' : '收集二档(中量)+恩惠过线 (+18% Bonus)'; }
   else if (minRetTier === 2) { retCls = 'st-grn'; retTip = '收集二档(中量)达标'; }
 
-  // 恩惠颜色档位
   let favCls = 'st-no', favTip = '恩惠未过线';
   if (allFavOk) {
     if (minSurvTier === 3 || minRetTier === 3) { favCls = 'st-gold'; favTip = '恩惠过线且激活三档核心Bonus!'; }
@@ -1085,9 +1098,11 @@ function calc() {
     const lb = lv <= 50 ? [0, 0, 0, 0, 0] : (LVB[lv] || [110, 140, 100, 130, 105]);
 
     const chks = Array.from(document.querySelectorAll('#nBox input:checked')).map(c => c.value);
-    let avail = m.n.filter(x => chks.includes(x[0]) && lv >= x[2]);
+    const checkedSet = new Set(chks);
+    let avail = m.n.filter(x => checkedSet.has(x[0]) && lv >= x[2]);
     if (!avail.length) {
       avail = m.n.filter(x => lv >= x[2]).slice(0, 3);
+      avail.forEach(x => checkedSet.add(x[0]));
     }
 
     let rawB = [];
@@ -1096,10 +1111,11 @@ function calc() {
       if (!tk || tk.length !== 4) { alert('部件格式错误'); return; }
       rawB.push(tk);
     } else if (pool === 'economy') {
+      // 主流传家宝路线 (1111 → 1121 → 3113 → 1123/3123 → 3124) 及衍生经济组合
       rawB = [
-        ['1','1','1','1'], ['1','1','2','1'], ['1','1','2','3'],
-        ['3','1','1','3'], ['3','1','2','1'], ['1','1','2','2'],
-        ['3','1','2','3'], ['3','1','2','2'], ['4','1','2','3']
+        ['1','1','1','1'], ['1','1','2','1'], ['3','1','1','3'],
+        ['1','1','2','3'], ['3','1','2','3'], ['3','1','2','4'],
+        ['3','1','2','1'], ['1','1','2','2'], ['3','1','2','2'], ['4','1','2','3']
       ];
       if (mode === 'surv') rawB.push(['4','2','5','4'], ['4','3','5','4'], ['4','2','4','4']);
     } else if (pool === 'common') {
@@ -1122,24 +1138,36 @@ function calc() {
       const surv = p1[0]+p2[0]+p3[0]+p4[0]+lb[0], ret = p1[1]+p2[1]+p3[1]+p4[1]+lb[1], spd = p1[2]+p2[2]+p3[2]+p4[2]+lb[2], rng = p1[3]+p2[3]+p3[3]+p4[3]+lb[3], fav = p1[4]+p2[4]+p3[4]+p4[4]+lb[4];
       const code = (a+b+c+d).includes('改') ? `${a}-${b}-${c}-${d}` : `${a}${b}${c}${d}`;
       const extraDesc = getExtraPartsDesc(a, b, c, d);
-      const keepAll = ['custom','economy','common'].includes(pool);
-      const key = keepAll ? code : `${Math.floor(spd/5)}_${Math.floor(rng/5)}_${mode==='surv'?Math.floor(surv/10):Math.floor((ret+fav)/40)}`;
-      const sc = surv * 2 + ret + fav + spd + rng;
-      if (!mapB.has(key) || sc > mapB.get(key).sc) mapB.set(key, { sc, b: { code, extraDesc, surv, ret, spd, rng, fav, cap } });
+      const affinity = calcPartAffinity(a, b, c, d);
+      const keepAll = ['custom','economy','common'].includes(pool) || MAINSTREAM_EXACT.has(code);
+      const key = keepAll ? code : `${Math.floor(spd/5)}_${Math.floor(rng/5)}_${mode==='surv'?Math.floor(surv/10):Math.floor(affinity*5)}`;
+      const sc = affinity * 500 + surv * 2 + ret + fav + spd + rng;
+      if (!mapB.has(key) || sc > mapB.get(key).sc) {
+        mapB.set(key, { sc, b: { code, extraDesc, affinity, surv, ret, spd, rng, fav, cap } });
+      }
     }
     const builds = Array.from(mapB.values()).map(x => x.b);
     if (!builds.length) return;
     const maxR = Math.max(...builds.map(b => b.rng));
     const mustArr = Array.from(mustSet);
 
+    // 预计算每个可用节点的开图价值 (开启尚未探索的后续节点)
+    const unlockInfoMap = new Map();
+    avail.forEach(x => {
+      unlockInfoMap.set(x[0], evalNodeUnlockValue(x, checkedSet, lv));
+    });
+
+    // 智能候选节点剪枝：确保所有「必经点」和「有未探索后续节点的开图点」100% 保留！
     if (avail.length > 10) {
+      const unlockCodes = avail.filter(x => unlockInfoMap.get(x[0]).pts > 0).map(x => x[0]);
       const byExp = [...avail].sort((a, b) => b[3] - a[3]).slice(0, 7);
       const byNear = [...avail].sort((a, b) => (a[5] + Math.hypot(a[7]-m.s[0], a[8]-m.s[1], a[9]-m.s[2])/30) - (b[5] + Math.hypot(b[7]-m.s[0], b[8]-m.s[1], b[9]-m.s[2])/30)).slice(0, 3);
-      const keepCodes = new Set([...mustArr, ...byExp.map(x => x[0]), ...byNear.map(x => x[0])]);
+      const keepCodes = new Set([...mustArr, ...unlockCodes, ...byExp.map(x => x[0]), ...byNear.map(x => x[0])]);
       avail = avail.filter(x => keepCodes.has(x[0])).slice(0, 11);
     }
 
     const N = avail.length;
+    const nodeUnlockPts = avail.map(x => unlockInfoMap.get(x[0]).pts);
     const pts = [m.s, ...avail.map(x => [x[7], x[8], x[9]])];
     const dRawMat = Array.from({ length: N + 1 }, () => new Float64Array(N + 1));
     const dMoveMat = Array.from({ length: N + 1 }, () => new Int32Array(N + 1));
@@ -1159,7 +1187,7 @@ function calc() {
     }, 0);
 
     let bestByMask = new Map();
-    function dfs(lastIdx, mask, count, dist, sumRaw, exp, order, rDists) {
+    function dfs(lastIdx, mask, count, dist, sumRaw, exp, ulkPts, order, rDists) {
       if (count > 0 && ((mask & mustMask) === mustMask)) {
         const prev = bestByMask.get(mask);
         if (!prev || dist < prev.dist || (dist === prev.dist && sumRaw < prev.sumRaw)) {
@@ -1171,6 +1199,7 @@ function calc() {
               dist,
               rDists: [...rDists],
               exp,
+              ulkPts,
               nds: order.map(i => avail[i])
             }
           });
@@ -1183,14 +1212,17 @@ function calc() {
         if (nd > maxR) continue;
         const dr = dRawMat[lastIdx][nxt + 1];
         order.push(nxt); rDists.push(dr);
-        dfs(nxt + 1, mask | (1 << nxt), count + 1, nd, sumRaw + dr, exp + avail[nxt][3], order, rDists);
+        dfs(nxt + 1, mask | (1 << nxt), count + 1, nd, sumRaw + dr, exp + avail[nxt][3], ulkPts + nodeUnlockPts[nxt], order, rDists);
         order.pop(); rDists.pop();
       }
     }
-    dfs(0, 0, 0, 0, 0, 0, [], []);
+    dfs(0, 0, 0, 0, 0, 0, 0, [], []);
     const pRoutes = Array.from(bestByMask.values()).map(x => x.r);
 
-    let res = [];
+    // 收集所有合法的 (build, route) 候选方案，并计算四维全局极值用于归一化
+    let allValidPairs = [];
+    let maxTotExp = 1, maxExph = 1, maxUlkPts = 0;
+
     for (let b of builds) {
       const nodeBonusExp = new Int32Array(N);
       const nodeBonusTier = new Int32Array(N);
@@ -1205,7 +1237,6 @@ function calc() {
         nodeSurvHigh[i] = b.surv >= th[1] ? 1 : 0;
       }
 
-      let bRes = [];
       for (let r of pRoutes) {
         if (r.dist > b.rng) continue;
         let sec = 43200;
@@ -1221,13 +1252,54 @@ function calc() {
         }
         if (sec > maxSec) continue;
         const exph = totBonusExp / (sec / 3600);
-        let sc = mode === 'tot'
-          ? (totBonusExp * 1000 + exph)
-          : (mode === 'surv' ? (sHigh === len ? 1e13 : (sOk === len ? 1e12 : sOk * 1e10)) + totBonusExp * 100 + exph : exph);
-        bRes.push({ sc, b, r, sec, totBonusExp, exph, sOk, sHigh, bonusTier: worstTier });
+        if (totBonusExp > maxTotExp) maxTotExp = totBonusExp;
+        if (exph > maxExph) maxExph = exph;
+        if (r.ulkPts > maxUlkPts) maxUlkPts = r.ulkPts;
+
+        allValidPairs.push({ b, r, sec, totBonusExp, exph, sOk, sHigh, bonusTier: worstTier });
       }
-      bRes.sort((a, b) => b.sc - a.sc);
-      res.push(...bRes.slice(0, 4));
+    }
+
+    // 根据当前选择的模式为所有方案打分
+    let byBuildMap = new Map();
+    for (let item of allValidPairs) {
+      const { b, r, totBonusExp, exph, sOk, sHigh } = item;
+      const len = r.idxs.length;
+      let sc = 0;
+      let compScore = 0;
+
+      // 计算四维综合评分 (0~100分)：
+      // 1. 单趟总经验归一化得分 (权重 28%)
+      const normTot = totBonusExp / maxTotExp;
+      // 2. 每小时经验效率归一化得分 (权重 28%)
+      const normExph = exph / maxExph;
+      // 3. 未探索后续节点开图得分 (权重 26%：若当前海图无可开新点则自动平分给总经验与效率)
+      const normUlk = maxUlkPts > 0 ? (r.ulkPts / maxUlkPts) : (normTot * 0.5 + normExph * 0.5);
+      // 4. 主流传家宝部件亲和度得分 (权重 18%，略低于平均权重)
+      const normPart = b.affinity;
+
+      compScore = (normTot * 0.28 + normExph * 0.28 + normUlk * 0.26 + normPart * 0.18) * 100;
+      item.compScore = compScore;
+
+      if (mode === 'balanced') {
+        sc = compScore;
+      } else if (mode === 'tot') {
+        sc = totBonusExp * 1000 + exph;
+      } else if (mode === 'surv') {
+        sc = (sHigh === len ? 1e13 : (sOk === len ? 1e12 : sOk * 1e10)) + compScore * 1e6 + totBonusExp;
+      } else {
+        sc = exph;
+      }
+      item.sc = sc;
+
+      if (!byBuildMap.has(b.code)) byBuildMap.set(b.code, []);
+      byBuildMap.get(b.code).push(item);
+    }
+
+    let res = [];
+    for (let bList of byBuildMap.values()) {
+      bList.sort((a, b) => b.sc - a.sc);
+      res.push(...bList.slice(0, 4));
     }
     res.sort((a, b) => b.sc - a.sc);
 
@@ -1252,21 +1324,34 @@ function calc() {
       ['t2', '🥈 次优方案', 'var(--grn)'],
       ['t3', '🥉 再次优方案', 'var(--blu)']
     ];
+
+    function getUnlockBadgeHTML(r) {
+      let targets = [];
+      for (let nd of r.nds) {
+        const info = unlockInfoMap.get(nd[0]);
+        if (info && info.targets.length) {
+          targets.push(`${nd[0]}→${info.targets.join(',')}`);
+        }
+      }
+      return targets.length ? `<span style="color:var(--gold);font-size:11.5px;margin-left:4px;">(🗝️开图: ${targets.join(' | ')})</span>` : '';
+    }
+
     top3.forEach((x, i) => {
       const trips = remExp > 0 ? Math.ceil(remExp / x.totBonusExp) : 1;
       const rStr = x.r.codes.join(' → ');
       const bonusPct = Math.round((x.totBonusExp / x.r.exp - 1) * 100);
       const bTierObj = BONUS_TIER_INFO[x.bonusTier];
       const fiveStatsHtml = formatFiveStatsHTML(x.b, x.r, x.sec, maxSec);
+      const ulkHtml = getUnlockBadgeHTML(x.r);
 
       tBox.innerHTML += `<div class="tc ${tNames[i][0]}">
         <div>
           <div style="display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:14.5px;">
-            <span style="color:${tNames[i][2]}">${tNames[i][1]}</span>
+            <span style="color:${tNames[i][2]}">${tNames[i][1]} <small style="font-weight:normal;opacity:0.85;">(综合${x.compScore.toFixed(1)}分)</small></span>
             <span class="btag" style="border-color:${tNames[i][2]};color:${tNames[i][2]}">${x.b.code}</span>
           </div>
           <div style="font-size:12px;color:var(--gold);margin-top:3px;">💰 ${x.b.extraDesc}</div>
-          <div class="rtag" style="color:${tNames[i][2]}">航线：${rStr}</div>
+          <div class="rtag" style="color:${tNames[i][2]}">航线：${rStr} ${ulkHtml}</div>
           <div class="tc-line">📈 期望总经验：<b style="color:var(--grn)">${x.totBonusExp.toLocaleString()}</b> <small style="color:var(--mut-light)">(基础 ${x.r.exp.toLocaleString()})</small></div>
           <div class="tc-line">⏱️ 精确耗时：<b style="color:var(--gold)">${fmtT(x.sec)}</b> | ⚡ <b>${Math.round(x.exph).toLocaleString()} /h</b></div>
           <div class="tc-line">🧭 航距：<b>${x.r.dist} / ${x.b.rng}</b> | 🎯 升下级需：<b style="color:var(--gold)">${trips} 趟</b></div>
@@ -1283,12 +1368,13 @@ function calc() {
       const bonusPct = Math.round((x.totBonusExp / x.r.exp - 1) * 100);
       const bTierObj = BONUS_TIER_INFO[x.bonusTier];
       const fiveStatsHtml = formatFiveStatsHTML(x.b, x.r, x.sec, maxSec);
+      const ulkHtml = getUnlockBadgeHTML(x.r);
 
       tb.innerHTML += `<tr>
-        <td><b>#${i + 1}</b></td>
+        <td><b>#${i + 1}</b><br><small style="color:var(--mut-light)">${x.compScore.toFixed(1)}分</small></td>
         <td><span class="btag">${x.b.code}</span><br><small style="color:var(--mut-light)">${x.b.extraDesc}</small></td>
         <td>${fiveStatsHtml}</td>
-        <td style="color:var(--grn);font-weight:bold;">${rStr}</td>
+        <td><span style="color:var(--grn);font-weight:bold;">${rStr}</span><br>${ulkHtml}</td>
         <td>${x.r.dist}/${x.b.rng}</td>
         <td><b style="color:var(--grn)">${x.totBonusExp.toLocaleString()}</b><br><small style="color:var(--mut-light)">基础 ${x.r.exp.toLocaleString()}</small></td>
         <td style="color:var(--gold);font-weight:bold;">${trips} 趟</td>
@@ -1300,10 +1386,10 @@ function calc() {
 
       mList.innerHTML += `<div class="m-rank-item">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-          <span><b>#${i + 1}</b> · <span class="btag">${x.b.code}</span> <small style="color:var(--mut-light)">(${x.b.extraDesc})</small></span>
+          <span><b>#${i + 1}</b> <small style="color:var(--mut-light)">(${x.compScore.toFixed(1)}分)</small> · <span class="btag">${x.b.code}</span> <small style="color:var(--mut-light)">(${x.b.extraDesc})</small></span>
           <span style="color:var(--gold);font-weight:bold;">${trips} 趟升级</span>
         </div>
-        <div style="color:var(--grn);font-weight:bold;font-size:14.5px;margin:4px 0;">航线：${rStr} <small style="color:var(--txt);font-weight:normal;">(航距 ${x.r.dist}/${x.b.rng})</small></div>
+        <div style="color:var(--grn);font-weight:bold;font-size:14.5px;margin:4px 0;">航线：${rStr} <small style="color:var(--txt);font-weight:normal;">(航距 ${x.r.dist}/${x.b.rng})</small> ${ulkHtml}</div>
         <div style="font-size:12.5px;margin:3px 0;">📈 期望经验：<b style="color:var(--grn)">${x.totBonusExp.toLocaleString()}</b> | ⚡ <b style="color:var(--blu)">${Math.round(x.exph).toLocaleString()} /h</b></div>
         <div style="font-size:12.5px;margin:3px 0;">⏱️ 耗时：<b style="color:var(--gold)">${fmtT(x.sec)}</b> | 五维：${fiveStatsHtml}</div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;gap:8px;flex-wrap:wrap;">
