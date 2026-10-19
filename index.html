@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>FF14 部队潜水艇全自动管家与配装航线规划器 v1.0</title>
+<title>FF14 部队潜水艇全自动管家与配装航线规划器 v1.1</title>
 <style>
   :root {
     --bg:#0f172a; --card:#1e293b; --panel:#0b1120; --bd:#334155;
@@ -20,20 +20,19 @@
     background:var(--bg); color:var(--txt); font-size:14px; line-height:1.45;
   }
   .wrap { width:100%; max-width:1440px; margin:0 auto; padding:14px; overflow-x:hidden; }
-  /* 关键防撑爆规则：所有Grid子项必须允许缩小到0 */
   .grid > *, .fleet-bar > *, .tiers > *, .row > *, .row3 > *, .nodes > * { min-width:0; max-width:100%; }
 
   header {
     display:flex; justify-content:space-between; align-items:center;
-    border-bottom:1px solid var(--bd); padding-bottom:12px; margin-bottom:14px;
+    border-bottom:1px solid var(--bd); padding-bottom:12px; margin-bottom:12px;
     flex-wrap:wrap; gap:10px; width:100%;
   }
   header h1 { margin:0; font-size:1.2rem; color:var(--blu); line-height:1.35; word-break:break-word; }
   .head-btns { display:flex; gap:8px; flex-wrap:wrap; }
   .btn {
     background:var(--card); color:var(--txt); border:1px solid var(--bd);
-    padding:7px 12px; border-radius:7px; cursor:pointer; font-size:13px; transition:0.15s;
-    display:inline-flex; align-items:center; justify-content:center;
+    padding:7px 12px; border-radius:7px; cursor:pointer; font-size:12.5px; transition:0.15s;
+    display:inline-flex; align-items:center; justify-content:center; gap:4px;
   }
   .btn:hover, .btn:active { border-color:var(--blu); color:var(--blu); }
   .btn-pri {
@@ -52,7 +51,17 @@
     font-weight:bold; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:12.5px;
   }
 
-  /* 四艘潜艇船坞：自适应列宽 */
+  /* 顶部收艇提醒设置栏 */
+  .alarm-bar {
+    background:var(--panel); border:1px solid var(--bd); border-radius:9px;
+    padding:9px 13px; margin-bottom:14px; display:flex; justify-content:space-between;
+    align-items:center; flex-wrap:wrap; gap:10px; font-size:12.5px;
+  }
+  .alarm-opts { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  .alarm-chk { display:inline-flex; align-items:center; gap:5px; cursor:pointer; color:var(--txt); user-select:none; }
+  .alarm-chk input { width:15px; height:15px; margin:0; accent-color:var(--blu); }
+
+  /* 四艘潜艇船坞 */
   .fleet-bar {
     display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));
     gap:10px; margin-bottom:14px; width:100%;
@@ -62,13 +71,14 @@
     padding:11px 13px; cursor:pointer; transition:0.15s; width:100%;
   }
   .sub-slot.active { border-color:var(--blu); box-shadow:0 0 0 2px rgba(56,189,248,0.25); background:#132038; }
+  .sub-slot.done-alert { border-color:var(--gold); box-shadow:0 0 12px rgba(245,158,11,0.45); animation:pulseBorder 1.5s infinite; }
+  @keyframes pulseBorder { 0%,100%{border-color:var(--gold);} 50%{border-color:#fde047;} }
   .sub-head { display:flex; justify-content:space-between; align-items:center; font-weight:bold; font-size:14.5px; margin-bottom:5px; }
   .exp-bar-bg { width:100%; height:7px; background:#334155; border-radius:4px; overflow:hidden; margin:6px 0; }
   .exp-bar-fill { height:100%; background:linear-gradient(90deg,var(--gold),#fde047); transition:width 0.3s; }
   .sub-voyage { margin-top:7px; padding-top:7px; border-top:1px dashed var(--bd); font-size:12px; word-break:break-word; }
 
-  /* 主体双栏布局：使用 minmax(0, 1fr) 严防右侧撑破屏幕 */
-  .grid { display:grid; grid-template-columns:minmax(0, 410px) minmax(0, 1fr); gap:14px; width:100%; }
+  .grid { display:grid; grid-template-columns:minmax(0, 415px) minmax(0, 1fr); gap:14px; width:100%; }
   .card {
     background:var(--card); border:1px solid var(--bd); border-radius:10px;
     padding:13px; margin-bottom:13px; width:100%; overflow:hidden;
@@ -99,7 +109,6 @@
   .nd.lock { opacity:0.38; }
   .nd.ulk { border-left:3px solid var(--gold); }
 
-  /* 最优 / 次优 / 再次优 卡片 */
   .tiers { display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:12px; margin-bottom:16px; width:100%; }
   .tc {
     background:var(--panel); border:1px solid var(--bd); border-radius:10px;
@@ -112,7 +121,6 @@
   .rtag { font-size:1.08rem; font-weight:bold; margin:6px 0; word-break:break-word; }
   .tc-line { margin:4px 0; font-size:13px; word-break:break-word; }
 
-  /* 电脑端表格 & 手机端自适应卡片列表 */
   .table-wrap { width:100%; max-width:100%; overflow-x:auto; max-height:560px; overflow-y:auto; border:1px solid var(--bd); border-radius:8px; }
   table { width:100%; border-collapse:collapse; font-size:12.5px; }
   th, td { padding:8px 7px; text-align:left; border-bottom:1px solid var(--bd); }
@@ -121,16 +129,32 @@
   .mobile-rank-list { display:none; flex-direction:column; gap:8px; max-height:580px; overflow-y:auto; width:100%; }
   .m-rank-item { background:var(--panel); border:1px solid var(--bd); border-radius:8px; padding:11px; width:100%; }
 
-  .chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; width:100%; }
-  .chip { padding:5px 10px; border-radius:6px; font-size:12.5px; border:1px solid var(--bd); background:var(--panel); cursor:pointer; color:var(--mut-light); }
+  /* 可删除的掉落物历史标签 */
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:7px; width:100%; }
+  .chip {
+    padding:4px 9px; border-radius:6px; font-size:12.5px; border:1px solid var(--bd);
+    background:var(--panel); cursor:pointer; color:var(--mut-light);
+    display:inline-flex; align-items:center; gap:5px; transition:0.15s;
+  }
+  .chip:hover { border-color:var(--blu); color:var(--txt); }
   .chip.on { background:var(--gold); color:#000; font-weight:bold; border-color:var(--gold); }
+  .chip-del {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:15px; height:15px; border-radius:50%; background:rgba(255,255,255,0.1);
+    color:var(--mut-light); font-size:11px; line-height:1;
+  }
+  .chip-del:hover { background:var(--red); color:#fff; }
+
   .drop-list { max-height:190px; overflow-y:auto; margin-top:8px; background:var(--panel); border:1px solid var(--bd); border-radius:6px; padding:4px; display:none; width:100%; }
   .drop-item { padding:7px 9px; border-bottom:1px solid #1e293b; font-size:12.5px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; border-radius:4px; gap:6px; flex-wrap:wrap; }
   .drop-item:hover, .drop-item:active { background:var(--card); }
 
-  /* 五维达标(绿) vs 未达标(灰) */
-  .st-ok { color:#34d399; font-weight:bold; }
-  .st-no { color:#64748b; font-weight:normal; }
+  /* ★ 五维多档独立色标：灰(未达标) / 绿(基础达标/二档) / 紫(三档过线/中阶Bonus) / 金(满档核心Bonus过线) */
+  .st-no   { color:#64748b; font-weight:normal; }
+  .st-grn  { color:#34d399; font-weight:bold; }
+  .st-pur  { color:#c084fc; font-weight:bold; }
+  .st-gold { color:#fbbf24; font-weight:bold; text-shadow:0 0 6px rgba(245,158,11,0.35); }
+
   /* 五档 Bonus 配色：1金 / 2紫 / 3红 / 4绿 / 5灰 */
   .bn-1 { background:rgba(245,158,11,0.22); border:1px solid #f59e0b; color:#fbbf24; padding:2px 6px; border-radius:4px; font-size:11.5px; font-weight:bold; display:inline-block; }
   .bn-2 { background:rgba(168,85,247,0.22); border:1px solid #a855f7; color:#c084fc; padding:2px 6px; border-radius:4px; font-size:11.5px; font-weight:bold; display:inline-block; }
@@ -139,7 +163,17 @@
   .bn-5 { background:rgba(100,116,139,0.18); border:1px solid #475569; color:#94a3b8; padding:2px 6px; border-radius:4px; font-size:11.5px; display:inline-block; }
   .preview-banner { background:rgba(245,158,11,0.15); border:1px solid var(--gold); color:#fde047; padding:9px 11px; border-radius:8px; margin-bottom:11px; font-size:12.5px; display:none; word-break:break-word; }
 
-  /* ======= 响应式断点：电脑窄窗口 / 平板 / 手机 ======= */
+  /* 网页内返航提醒模态弹窗 */
+  .modal-mask {
+    position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:9999;
+    display:none; align-items:center; justify-content:center; padding:16px;
+  }
+  .modal-box {
+    background:var(--card); border:2px solid var(--gold); border-radius:12px;
+    max-width:420px; width:100%; padding:18px; text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,0.6);
+  }
+
   @media (max-width: 1080px) {
     .grid { grid-template-columns:minmax(0, 1fr); }
   }
@@ -148,8 +182,8 @@
     header { flex-direction:column; align-items:stretch; gap:8px; }
     header h1 { font-size:1.1rem; }
     header h1 small { display:block; font-size:12px; margin-top:2px; }
-    .head-btns { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-    .head-btns .btn { width:100%; padding:8px 6px; font-size:12.5px; }
+    .head-btns { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+    .head-btns .btn { width:100%; padding:8px 6px; font-size:12px; }
     .fleet-bar { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
     .sub-slot { padding:9px 10px; }
     .sub-head { font-size:13.5px; }
@@ -158,8 +192,7 @@
     .row3 > div:first-child { grid-column:span 2; }
     input, select { font-size:15px; padding:9px 10px; }
     .nodes { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:5px; padding:5px; }
-    . tiers { grid-template-columns:minmax(0,1fr); }
-    /* 窄屏与手机端自动将宽表格切换为竖向卡片列表，彻底杜绝横向撑爆 */
+    .tiers { grid-template-columns:minmax(0,1fr); }
     .table-wrap { display:none; }
     .mobile-rank-list { display:flex; }
   }
@@ -171,15 +204,29 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>🚢 FF14 部队潜水艇管家 & 航线规划器 <small style="color:var(--grn);font-weight:normal;">v1.0 (零溢出完美适配版 · 五维达标高亮 · 五档Bonus色标)</small></h1>
+    <h1>🚢 FF14 部队潜水艇管家 & 航线规划器 <small style="color:var(--grn);font-weight:normal;">v1.1 (收艇闹钟 · 智能标签 · 五维四色分档)</small></h1>
     <div class="head-btns">
-      <button class="btn" style="border-color:var(--grn);color:var(--grn);" onclick="forceUpdateApp()" title="强制绕过浏览器缓存拉取最新版本，您的潜艇存档数据会100%保留！">🔄 获取最新版本</button>
+      <button class="btn" style="border-color:var(--grn);color:var(--grn);" onclick="forceUpdateApp()" title="强制绕过浏览器缓存拉取最新版本，您的潜艇存档数据100%保留！">🔄 获取最新版本</button>
       <button class="btn" style="border-color:var(--blu);color:var(--blu);" onclick="downloadSelfHTML()">💾 下载离线HTML</button>
-      <button class="btn" onclick="restoreInitialFleet()" title="恢复到你首次手动填入时的初始等级与经验">⏪ 恢复初始填入数据</button>
-      <button class="btn" onclick="resetBlankFleet()" style="color:#f87171;">🗑️ 清空重置为0级</button>
+      <button class="btn" onclick="restoreInitialFleet()" title="恢复到你首次手动填入时的初始等级与经验">⏪ 恢复初始数据</button>
+      <button class="btn" onclick="resetBlankFleet()" style="color:#f87171;">🗑️ 清空重置</button>
     </div>
   </header>
 
+  <!-- 顶部：多模式可勾选收艇提醒设置栏 -->
+  <div class="alarm-bar">
+    <div class="alarm-opts">
+      <b style="color:var(--gold);">🔔 收艇返航提醒方式 (可多选)：</b>
+      <label class="alarm-chk"><input type="checkbox" id="almSound" onchange="onAlarmSettingChange(false)"> 🔊 响铃2秒</label>
+      <label class="alarm-chk"><input type="checkbox" id="almNotify" onchange="onAlarmSettingChange(true)"> 💻 电脑右下角/手机通知栏弹窗</label>
+      <label class="alarm-chk"><input type="checkbox" id="almModal" onchange="onAlarmSettingChange(false)"> 📱 网页弹窗+手机震动</label>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button class="btn" style="padding:4px 9px;font-size:12px;border-color:var(--gold);color:var(--gold);" onclick="testAlarmNow()">🎵 试听响铃与测试提醒</button>
+    </div>
+  </div>
+
+  <!-- 四艘潜艇状态栏 -->
   <div id="fleetBar" class="fleet-bar"></div>
 
   <div class="grid">
@@ -203,9 +250,9 @@
             <input type="number" id="maxExp" min="0" inputmode="numeric" placeholder="自动计算" onchange="onSubStatInput(false)">
           </div>
         </div>
-        <div style="font-size:12.5px;color:var(--mut-light);margin-bottom:10px;background:var(--panel);padding:8px 10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;">
-          <span>📈 距升下级还差：<b id="remExpTxt" style="color:var(--gold)">0</b> 经验</span>
-          <span style="font-size:12px;color:var(--blu);">五维：<b class="st-ok">绿=达标</b> / <span class="st-no">灰=未达标</span></span>
+        <div style="font-size:12px;color:var(--mut-light);margin-bottom:10px;background:var(--panel);padding:8px 10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;">
+          <span>📈 距升下级差：<b id="remExpTxt" style="color:var(--gold)">0</b></span>
+          <span>五维色标：<span class="st-no">灰未达标</span> · <span class="st-grn">绿二档/达标</span> · <span class="st-pur">紫三档</span> · <span class="st-gold">金Bonus核心</span></span>
         </div>
 
         <div class="row">
@@ -258,25 +305,17 @@
         <button class="btn btn-pri" onclick="calc()">🚀 立即计算【最优 / 次优 / 再次优】配装与路线</button>
       </div>
 
-      <!-- 掉落物搜索模块 -->
+      <!-- 掉落物搜索模块 (支持自增删历史标签，上限10个) -->
       <div class="card">
         <h2>
-          <span>🔍 2. 掉落物搜索模块 <small style="color:var(--gold);font-weight:normal;font-size:12px;">(点击锁定+探查优先)</small></span>
+          <span>🔍 2. 掉落物搜索 <small id="tagCountTxt" style="color:var(--gold);font-weight:normal;font-size:12px;">(快捷标签 3/10)</small></span>
           <button class="btn" style="padding:3px 8px;font-size:12px;" onclick="clearDropSearch()">清除搜索</button>
         </h2>
-        <input type="text" id="dropInput" placeholder="输入物品名搜索 (如: 海底黏土 / 炼金树脂 / 狐獴 / 经典眼镜)..." oninput="onDropSearch()">
-        <div class="chips">
-          <span class="chip" onclick="quickDrop('海底黏土')">海底黏土</span>
-          <span class="chip" onclick="quickDrop('黄檀木材')">黄檀木材</span>
-          <span class="chip" onclick="quickDrop('纯钛矿')">纯钛矿</span>
-          <span class="chip" onclick="quickDrop('炼金树脂')">炼金树脂</span>
-          <span class="chip" onclick="quickDrop('鮣鱼级')">鮣鱼级</span>
-          <span class="chip" onclick="quickDrop('希尔德拉')">希尔德拉P型</span>
-          <span class="chip" onclick="quickDrop('狐獴')">狐獴</span>
-          <span class="chip" onclick="quickDrop('经典眼镜')">经典眼镜</span>
-          <span class="chip" onclick="quickDrop('阳伞')">印花阳伞</span>
-          <span class="chip" onclick="quickDrop('乐谱')">管弦乐谱</span>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="dropInput" placeholder="输入物品名 (如: 纯钛矿 / 狐獴 / 阳伞)..." oninput="onDropSearch()" onkeydown="if(event.key==='Enter')saveCurrentDropTag()">
+          <button class="btn" style="white-space:nowrap;border-color:var(--gold);color:var(--gold);" onclick="saveCurrentDropTag()">➕ 存为标签</button>
         </div>
+        <div id="dropTagsBox" class="chips"></div>
         <div id="dropResults" class="drop-list"></div>
       </div>
 
@@ -311,19 +350,18 @@
             <span class="bn-1">1档:全三档(+75%)</span>
             <span class="bn-2">2档:收三+恩(+43%)</span>
             <span class="bn-3">3档:收二/探三+恩(+15~28%)</span>
-            <span class="bn-4">4档:单项过线(+5~18%)</span>
-            <span class="bn-5">5档:未过线(+0~2%)</span>
+            <span class="bn-4">4档:探三过线(+5%)</span>
+            <span class="bn-5">5档:基础面板(+0%)</span>
           </div>
         </div>
 
-        <!-- 电脑宽屏表格视图 -->
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>#</th>
                 <th>部件组合 & 额外购置</th>
-                <th>五维 (<span class="st-ok">绿=达标</span> / <span class="st-no">灰=未达标</span>)</th>
+                <th>五维 (<span class="st-gold">金Bonus</span>/<span class="st-pur">紫三档</span>/<span class="st-grn">绿二档</span>/<span class="st-no">灰未达</span>)</th>
                 <th>最佳节点顺序</th>
                 <th>航距</th>
                 <th>期望总经验 (含Bonus)</th>
@@ -338,10 +376,19 @@
           </table>
         </div>
 
-        <!-- 手机与窄窗口自适应卡片列表视图 (零横向溢出) -->
         <div id="mobileRankList" class="mobile-rank-list"></div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- 网页内返航提醒弹窗 -->
+<div id="alarmModal" class="modal-mask">
+  <div class="modal-box">
+    <div style="font-size:2.2rem;margin-bottom:6px;">⚓🎉</div>
+    <h3 id="alarmModalTitle" style="margin:0 0 8px 0;color:var(--gold);font-size:1.2rem;">潜水艇已返航！</h3>
+    <p id="alarmModalBody" style="color:var(--txt);font-size:14px;margin:0 0 16px 0;line-height:1.5;"></p>
+    <button class="btn btn-pri" style="margin-top:0;" onclick="closeAlarmModal()">知道啦，去收艇！</button>
   </div>
 </div>
 
@@ -357,10 +404,30 @@ const BO={1:[50,40,10,-20,15,5],2:[60,20,20,-15,15,9],3:[25,60,-15,20,15,12],4:[
 const BR={1:[20,20,20,20,20,5],2:[25,5,25,30,30,9],3:[0,25,20,45,40,12],4:[55,20,35,-15,50,14],5:[55,20,-5,30,60,17],'1改':[25,25,30,25,35,20],'2改':[30,10,30,35,40,20],'3改':[0,30,25,50,45,20],'4改':[60,20,35,-10,55,20],'5改':[60,20,-5,30,60,20]};
 const PNAMES = {'1':'鲨鱼','2':'甲鲎','3':'须鲸','4':'腔棘鱼','5':'希尔德拉','1改':'鲨改','2改':'甲改','3改':'须改','4改':'腔改','5改':'希改'};
 
+// 保持同一存储键，100%继承老用户潜艇数据
 const STORAGE_KEY = 'ff14_sub_fleet_v4_safe';
 let activeSubIdx = 0;
 let mustSet = new Set();
 let fleetState = null;
+
+// 强制绕过浏览器缓存拉取最新页面（100%保留用户的localStorage潜艇数据）
+function forceUpdateApp() {
+  const url = new URL(window.location.href);
+  url.searchParams.set('v', Date.now());
+  window.location.replace(url.toString());
+}
+
+// 一键打包下载离线 HTML
+function downloadSelfHTML() {
+  const cleanDoc = document.documentElement.cloneNode(true);
+  const htmlContent = '<!DOCTYPE html>\n' + cleanDoc.outerHTML;
+  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'FF14潜水艇管家_离线版.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 function getBlankState() {
   return {
@@ -368,6 +435,9 @@ function getBlankState() {
     mode: "tot",
     maxH: "48",
     unlockedByMap: {},
+    // 初始仅设 3 个高频预选词，留 7 个空位供用户添加
+    dropTags: ["海底黏土", "炼金树脂", "经典眼镜"],
+    alarmCfg: { sound: true, notify: false, modal: true },
     subs: [
       { name: "潜水艇-1", lv: 0, curExp: 0, maxExp: 20000, mapId: "1", voyage: null, initBackup: null },
       { name: "潜水艇-2", lv: 0, curExp: 0, maxExp: 20000, mapId: "1", voyage: null, initBackup: null },
@@ -384,12 +454,23 @@ function loadFleet() {
     if (!fleetState || !Array.isArray(fleetState.subs) || fleetState.subs.length !== 4) {
       fleetState = getBlankState();
     }
+    // 兼容旧存档无缝升级新字段
+    if (!Array.isArray(fleetState.dropTags)) {
+      fleetState.dropTags = ["海底黏土", "炼金树脂", "经典眼镜"];
+    }
+    if (!fleetState.alarmCfg) {
+      fleetState.alarmCfg = { sound: true, notify: false, modal: true };
+    }
   } catch (e) {
     fleetState = getBlankState();
   }
   document.getElementById('pool').value = fleetState.pool || "economy";
   document.getElementById('mode').value = fleetState.mode || "tot";
   document.getElementById('maxH').value = fleetState.maxH || "48";
+  document.getElementById('almSound').checked = !!fleetState.alarmCfg.sound;
+  document.getElementById('almNotify').checked = !!fleetState.alarmCfg.notify;
+  document.getElementById('almModal').checked = !!fleetState.alarmCfg.modal;
+  renderDropTags();
 }
 
 function saveFleet() {
@@ -400,23 +481,6 @@ function saveFleet() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(fleetState));
   } catch (e) {}
   renderFleetBar();
-}
-
-function forceUpdateApp() {
-  const url = new URL(window.location.href);
-  url.searchParams.set('v', Date.now());
-  window.location.replace(url.toString());
-}
-
-function downloadSelfHTML() {
-  const cleanDoc = document.documentElement.cloneNode(true);
-  const htmlContent = '<!DOCTYPE html>\n' + cleanDoc.outerHTML;
-  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'FF14潜水艇管家_离线版.html';
-  a.click();
-  URL.revokeObjectURL(a.href);
 }
 
 function resetBlankFleet() {
@@ -446,6 +510,161 @@ function restoreInitialFleet() {
   selectSub(activeSubIdx);
 }
 
+// ======= 1. 可删除/可自动保存的掉落物快捷标签系统 (上限10个) =======
+function renderDropTags() {
+  const box = document.getElementById('dropTagsBox');
+  const countTxt = document.getElementById('tagCountTxt');
+  if (!box) return;
+  const tags = fleetState.dropTags || [];
+  countTxt.textContent = `(快捷标签 ${tags.length}/10)`;
+  box.innerHTML = tags.map((t, idx) => `
+    <span class="chip" onclick="quickDrop('${t.replace(/'/g, "\\'")}')">
+      <span>${t}</span>
+      <span class="chip-del" title="删除此标签" onclick="event.stopPropagation();removeDropTag(${idx})">×</span>
+    </span>
+  `).join('');
+}
+
+function addDropTagSilent(kw, showAlertIfFull) {
+  kw = (kw || '').trim();
+  if (!kw) return;
+  if (!Array.isArray(fleetState.dropTags)) fleetState.dropTags = [];
+  if (fleetState.dropTags.includes(kw)) return; // 已存在则不重复添加
+  if (fleetState.dropTags.length >= 10) {
+    if (showAlertIfFull) {
+      alert('⚠️ 快捷预选词已满 10 个！请先点击下方部分旧标签右侧的「×」删除一些，再添加新物品。');
+    }
+    return;
+  }
+  fleetState.dropTags.push(kw);
+  saveFleet();
+  renderDropTags();
+}
+
+function saveCurrentDropTag() {
+  const kw = document.getElementById('dropInput').value.trim();
+  if (!kw) {
+    alert('请先在搜索框输入物品名称！');
+    return;
+  }
+  addDropTagSilent(kw, true);
+  onDropSearch();
+}
+
+function removeDropTag(idx) {
+  fleetState.dropTags.splice(idx, 1);
+  saveFleet();
+  renderDropTags();
+}
+
+// ======= 3. 多模式收艇提醒与闹钟系统 (2s响铃 / 电脑通知 / 手机弹窗 / 导出系统闹钟) =======
+function onAlarmSettingChange(askNotifyPerm) {
+  fleetState.alarmCfg = {
+    sound: document.getElementById('almSound').checked,
+    notify: document.getElementById('almNotify').checked,
+    modal: document.getElementById('almModal').checked
+  };
+  if (askNotifyPerm && fleetState.alarmCfg.notify) {
+    if ('Notification' in window && Notification.permission !== 'granted') {
+      Notification.requestPermission().then(perm => {
+        if (perm !== 'granted') {
+          alert('💡 您的浏览器尚未授予通知权限，请在浏览器地址栏左侧开启「通知」权限以接收右下角/通知栏弹窗。');
+        }
+      });
+    }
+  }
+  saveFleet();
+}
+
+// 使用 Web Audio API 合成 2.0 秒悦耳和弦响铃 (零外部音频依赖，离线可用)
+function playBell2Seconds() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50]; // C5-E5-G5-C6
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.30);
+      gain.gain.setValueAtTime(0.001, ctx.currentTime + i * 0.30);
+      gain.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + i * 0.30 + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.30 + 0.29);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.30);
+      osc.stop(ctx.currentTime + i * 0.30 + 0.30);
+    });
+    setTimeout(() => { try { ctx.close(); } catch(e){} }, 2100);
+  } catch (e) {}
+}
+
+function triggerSubAlarm(subName, buildCode, routeStr) {
+  const cfg = fleetState.alarmCfg || { sound: true, notify: false, modal: true };
+  if (cfg.sound) {
+    playBell2Seconds();
+  }
+  if (cfg.notify && 'Notification' in window && Notification.permission === 'granted') {
+    try {
+      new Notification(`🚢 ${subName} 已探索完毕返航！`, {
+        body: `配装 ${buildCode} | 航线 ${routeStr} 已回港，快去工房收艇吧！`,
+        tag: 'ff14-sub-' + subName
+      });
+    } catch (e) {}
+  }
+  if (cfg.modal) {
+    if (navigator.vibrate) {
+      try { navigator.vibrate([300, 150, 300]); } catch (e) {}
+    }
+    document.getElementById('alarmModalTitle').textContent = `⚓ ${subName} 已返航！`;
+    document.getElementById('alarmModalBody').innerHTML = `配装 <b>${buildCode}</b>（航线：<b style="color:var(--grn)">${routeStr}</b>）已完成探索回港，快去部队工房收艇并点击「累计经验」吧！`;
+    document.getElementById('alarmModal').style.display = 'flex';
+  }
+}
+
+function closeAlarmModal() {
+  document.getElementById('alarmModal').style.display = 'none';
+}
+
+function testAlarmNow() {
+  triggerSubAlarm('潜水艇-1 (测试提醒)', '1123', 'A → F → E');
+}
+
+// 导出 .ics 系统日历闹钟提醒 (支持 iOS / Android / Windows 系统级准点闹钟提醒)
+function exportVoyageICS(idx) {
+  const s = fleetState.subs[idx];
+  if (!s || !s.voyage) return;
+  const fmtICSDate = (ms) => new Date(ms).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  const dtStart = fmtICSDate(s.voyage.endTime);
+  const dtEnd = fmtICSDate(s.voyage.endTime + 15 * 60 * 1000);
+  const icsLines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//FF14 Submarine Planner//CN',
+    'BEGIN:VEVENT',
+    `UID:ff14-sub-${idx}-${s.voyage.endTime}@ffxiv`,
+    `DTSTAMP:${fmtICSDate(Date.now())}`,
+    `DTSTART:${dtStart}`,
+    `DTEND:${dtEnd}`,
+    `SUMMARY:🚢 FF14 收艇提醒：${s.name} (${s.voyage.route})`,
+    `DESCRIPTION:${s.name} 配装 ${s.voyage.build} 航线 ${s.voyage.route} 已返航，预计获得 ${s.voyage.exp.toLocaleString()} 经验！`,
+    'BEGIN:VALARM',
+    'TRIGGER:-PT0M',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:FF14 潜水艇已返航！',
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+  const blob = new Blob([icsLines], { type: 'text/calendar;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${s.name}_收艇闹钟.ics`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 function renderFleetBar() {
   const bar = document.getElementById('fleetBar');
   bar.innerHTML = '';
@@ -455,8 +674,17 @@ function renderFleetBar() {
     const isUnset = (!s.lv || s.lv <= 0);
     const pct = isUnset ? 0 : (s.lv >= 145 ? 100 : Math.min(100, Math.round((s.curExp / Math.max(1, s.maxExp)) * 100)));
     const remExp = isUnset ? 0 : Math.max(0, s.maxExp - s.curExp);
+    const isDone = s.voyage && (s.voyage.endTime <= now);
+
+    // 到点自动触发一次提醒
+    if (isDone && !s.voyage.alerted) {
+      s.voyage.alerted = true;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(fleetState)); } catch(e){}
+      triggerSubAlarm(s.name, s.voyage.build, s.voyage.route);
+    }
+
     const div = document.createElement('div');
-    div.className = 'sub-slot' + (idx === activeSubIdx ? ' active' : '');
+    div.className = 'sub-slot' + (idx === activeSubIdx ? ' active' : '') + (isDone ? ' done-alert' : '');
     div.onclick = (e) => { if (e.target.tagName !== 'BUTTON') selectSub(idx); };
 
     let vHtml = isUnset
@@ -465,18 +693,18 @@ function renderFleetBar() {
 
     if (s.voyage) {
       const leftSec = Math.max(0, Math.floor((s.voyage.endTime - now) / 1000));
-      const endStr = new Date(s.voyage.endTime).toLocaleString('zh-CN', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-      const isDone = leftSec === 0;
+      const endStr = new Date(s.voyage.endTime).toLocaleString('zh-CN', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
       vHtml = `
         <div class="sub-voyage">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;">
             <span>🧭 <b>${s.voyage.build}</b> : <b style="color:var(--grn)">${s.voyage.route}</b></span>
-            <span style="color:${isDone?'var(--gold)':'var(--blu)'};font-weight:bold;">${isDone ? '🎉 已返航！' : fmtT(leftSec)}</span>
+            <span style="color:${isDone?'var(--gold)':'var(--blu)'};font-weight:bold;">${isDone ? '🔔 已返航！' : fmtT(leftSec)}</span>
           </div>
-          <div style="color:var(--mut-light);margin:4px 0;">返航：${endStr} (+${s.voyage.exp.toLocaleString()} EXP)</div>
-          <div style="display:flex;gap:6px;margin-top:6px;">
-            <button class="btn-claim" style="flex:1;" onclick="claimVoyage(${idx})">✅ 航程结束·累计经验</button>
-            <button class="btn" style="padding:4px 8px;font-size:12px;" onclick="cancelVoyage(${idx})">取消</button>
+          <div style="color:var(--mut-light);margin:4px 0;">返航时刻：${endStr}</div>
+          <div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;">
+            <button class="btn-claim" style="flex:1;" onclick="claimVoyage(${idx})">✅ 结束·累计经验</button>
+            <button class="btn" style="padding:4px 7px;font-size:11.5px;border-color:var(--blu);color:var(--blu);" title="导出到手机/电脑系统日历闹钟" onclick="exportVoyageICS(${idx})">⏰系统闹钟</button>
+            <button class="btn" style="padding:4px 7px;font-size:11.5px;" onclick="cancelVoyage(${idx})">取消</button>
           </div>
         </div>
       `;
@@ -664,16 +892,18 @@ function onDropSearch() {
   }
 
   resBox.innerHTML = matches.map(x => `
-    <div class="drop-item" onclick="selectDropNode('${x.mid}','${x.node[0]}')">
+    <div class="drop-item" onclick="selectDropNode('${x.mid}','${x.node[0]}','${kw.replace(/'/g, "\\'")}')">
       <div>
         <b style="color:var(--blu)">[${x.mName}] ${x.node[1]}</b> <small style="color:var(--mut-light)">(Lv.${x.node[2]} | 探查良${x.node[11][0]}/优${x.node[11][1]})</small>
       </div>
-      <span class="bn-4">${x.cat} · 点击锁定</span>
+      <span class="bn-4">${x.cat} · 点击锁定并记住标签</span>
     </div>
   `).join('');
 }
 
-function selectDropNode(mid, code) {
+function selectDropNode(mid, code, kw) {
+  // 点击结果节点时自动将该搜索词加入快捷标签栏 (若满10个则提示)
+  if (kw) addDropTagSilent(kw, true);
   const s = fleetState.subs[activeSubIdx];
   s.mapId = String(mid);
   document.getElementById('mapId').value = String(mid);
@@ -688,6 +918,13 @@ function selectDropNode(mid, code) {
   calc();
 }
 
+// 严格对齐《蒜女心经》Bonus 期望公式
+// 1) 全属性三档过线 (探3 + 收3 + 恩): 期望 +75% (70~80%) -> 1档(金)
+// 2) 收集三档 + 恩惠过线 (收3 + 恩): 期望 +42.5% (40~45%) -> 2档(紫)
+// 3) 收集二档 + 恩惠过线 (收2 + 恩): 期望 +17.5% (15~20%) [若同时探3则为+27.5%] -> 3档(红)
+// 4) 探索三档 + 恩惠过线 (探3 + 恩): 期望 +15% -> 3档(红)
+// 5) 仅探索三档过线 (探3): 期望 +5% (或单项收2/收3无恩惠) -> 4档(绿)
+// 6) 未过线 (探索二档影响<5%忽略): +0% -> 5档(灰)
 function evalNodeBonusFast(surv, ret, fav, th) {
   const s2 = th[0], s3 = th[1], fReq = th[2], r2 = th[3], r3 = th[4];
   const favOk = fav >= fReq;
@@ -695,24 +932,20 @@ function evalNodeBonusFast(surv, ret, fav, th) {
   const rTier = (r3 > 0 && ret >= r3) ? 3 : ((r2 > 0 && ret >= r2) ? 2 : 1);
 
   if (sTier === 3 && rTier === 3 && favOk) return { mult: 1.75, tier: 1 };
-  if (rTier === 3 && favOk) return { mult: sTier === 2 ? 1.45 : 1.425, tier: 2 };
+  if (rTier === 3 && favOk) return { mult: 1.425, tier: 2 };
   if (rTier === 2 && favOk) return { mult: sTier === 3 ? 1.275 : 1.175, tier: 3 };
   if (sTier === 3 && favOk) return { mult: 1.15, tier: 3 };
   if (sTier === 3) return { mult: 1.05 + (rTier === 3 ? 0.15 : (rTier === 2 ? 0.05 : 0)), tier: 4 };
-
-  let m = 1.0;
-  if (sTier === 2) m += 0.02;
-  if (rTier === 3) m += 0.18;
-  else if (rTier === 2) m += 0.08;
-  if (favOk) m += 0.05;
-  return { mult: m, tier: m >= 1.05 ? 4 : 5 };
+  if (rTier === 3) return { mult: 1.15, tier: 4 };
+  if (rTier === 2) return { mult: 1.05, tier: 4 };
+  return { mult: 1.0, tier: 5 };
 }
 
 const BONUS_TIER_INFO = {
   1: { cls: 'bn-1', label: '1档: 全三档过线' },
   2: { cls: 'bn-2', label: '2档: 收集三+恩惠' },
   3: { cls: 'bn-3', label: '3档: 收二/探三+恩惠' },
-  4: { cls: 'bn-4', label: '4档: 单项过线加成' },
+  4: { cls: 'bn-4', label: '4档: 探三/单项过线' },
   5: { cls: 'bn-5', label: '5档: 基础无加成' }
 };
 
@@ -743,7 +976,8 @@ function startVoyage(buildCode, routeStr, sec, expWithBonus) {
     sec: sec,
     exp: expWithBonus,
     startTime: Date.now(),
-    endTime: Date.now() + sec * 1000
+    endTime: Date.now() + sec * 1000,
+    alerted: false
   };
   saveFleet();
 }
@@ -781,22 +1015,49 @@ function cancelVoyage(idx) {
   saveFleet();
 }
 
+// ★ 2. 五维多档位独立色标 (灰 st-no / 绿 st-grn / 紫 st-pur / 金 st-gold)
+// - 探 (surv): 未过二档=灰 | 过二档(良)=绿 | 过三档(优,+5%Bonus)=紫 | 过三档+恩惠(+15%/+75%Bonus)=金！
+// - 收 (ret):  未过二档=灰 | 过二档(中量)=绿 | 过二档+恩惠(+18%Bonus)或单过三档=紫 | 过三档(大量)+恩惠(+43%/+75%Bonus)=金！
+// - 恩 (fav):  未过线=灰   | 仅恩惠过线=绿   | 配合收二过线(+18%Bonus)=紫         | 配合探三/收三过线触发高阶Bonus=金！
 function formatFiveStatsHTML(b, r, sec, maxSec) {
-  let survPass = true, retPass = true, favPass = true;
+  let minSurvTier = 3, minRetTier = 3, allFavOk = true;
   for (let n of r.nds) {
     const [s2, s3, fReq, r2, r3] = n[11];
-    if (s2 > 0 && b.surv < s2) survPass = false;
-    if (r2 > 0 && b.ret < r2) retPass = false;
-    if (fReq > 0 && b.fav < fReq) favPass = false;
+    const st = (s3 > 0 && b.surv >= s3) ? 3 : ((s2 > 0 && b.surv >= s2) ? 2 : 1);
+    const rt = (r3 > 0 && b.ret >= r3) ? 3 : ((r2 > 0 && b.ret >= r2) ? 2 : 1);
+    if (st < minSurvTier) minSurvTier = st;
+    if (rt < minRetTier) minRetTier = rt;
+    if (fReq > 0 && b.fav < fReq) allFavOk = false;
   }
+
+  // 探索性能颜色档位
+  let survCls = 'st-no', survTip = '探索未达标(一档)';
+  if (minSurvTier === 3 && allFavOk) { survCls = 'st-gold'; survTip = '探索三档(优)+恩惠过线 (核心Bonus达标!)'; }
+  else if (minSurvTier === 3) { survCls = 'st-pur'; survTip = '探索三档(优)过线 (+5% Bonus)'; }
+  else if (minSurvTier === 2) { survCls = 'st-grn'; survTip = '探索二档(良)达标'; }
+
+  // 收集性能颜色档位
+  let retCls = 'st-no', retTip = '收集未达标(一档)';
+  if (minRetTier === 3 && allFavOk) { retCls = 'st-gold'; retTip = '收集三档(大量)+恩惠过线 (+43%~75%核心Bonus!)'; }
+  else if (minRetTier === 3 || (minRetTier === 2 && allFavOk)) { retCls = 'st-pur'; retTip = minRetTier === 3 ? '收集三档(大量)过线' : '收集二档(中量)+恩惠过线 (+18% Bonus)'; }
+  else if (minRetTier === 2) { retCls = 'st-grn'; retTip = '收集二档(中量)达标'; }
+
+  // 恩惠颜色档位
+  let favCls = 'st-no', favTip = '恩惠未过线';
+  if (allFavOk) {
+    if (minSurvTier === 3 || minRetTier === 3) { favCls = 'st-gold'; favTip = '恩惠过线且激活三档核心Bonus!'; }
+    else if (minRetTier === 2) { favCls = 'st-pur'; favTip = '恩惠过线且激活收集二档Bonus (+18%)'; }
+    else { favCls = 'st-grn'; favTip = '恩惠已过线(必定二次探索)'; }
+  }
+
   const spdPass = sec <= maxSec;
   const rngPass = b.rng >= r.dist;
 
-  return `<span class="${survPass?'st-ok':'st-no'}" title="探索性能(${survPass?'已达标':'未达标'})">探${b.surv}</span> / ` +
-         `<span class="${retPass?'st-ok':'st-no'}" title="收集性能(${retPass?'已达标':'未达标'})">收${b.ret}</span> / ` +
-         `<span class="${spdPass?'st-ok':'st-no'}" title="巡航速度(${spdPass?'时长达标':'超时'})">速${b.spd}</span> / ` +
-         `<span class="${rngPass?'st-ok':'st-no'}" title="航行距离(${rngPass?'距离达标':'不足'})">距${b.rng}</span> / ` +
-         `<span class="${favPass?'st-ok':'st-no'}" title="恩惠(${favPass?'已达标':'未达标'})">恩${b.fav}</span>`;
+  return `<span class="${survCls}" title="${survTip}">探${b.surv}</span> / ` +
+         `<span class="${retCls}" title="${retTip}">收${b.ret}</span> / ` +
+         `<span class="${spdPass?'st-grn':'st-no'}" title="巡航速度(${spdPass?'时长达标':'超时'})">速${b.spd}</span> / ` +
+         `<span class="${rngPass?'st-grn':'st-no'}" title="航行距离(${rngPass?'距离达标':'不足'})">距${b.rng}</span> / ` +
+         `<span class="${favCls}" title="${favTip}">恩${b.fav}</span>`;
 }
 
 function calc() {
@@ -1023,7 +1284,6 @@ function calc() {
       const bTierObj = BONUS_TIER_INFO[x.bonusTier];
       const fiveStatsHtml = formatFiveStatsHTML(x.b, x.r, x.sec, maxSec);
 
-      // 电脑端表格行
       tb.innerHTML += `<tr>
         <td><b>#${i + 1}</b></td>
         <td><span class="btag">${x.b.code}</span><br><small style="color:var(--mut-light)">${x.b.extraDesc}</small></td>
@@ -1038,7 +1298,6 @@ function calc() {
         <td><button class="btn-go" onclick="startVoyage('${x.b.code}','${rStr}',${x.sec},${x.totBonusExp})">🚢 选定出航</button></td>
       </tr>`;
 
-      // 手机与窄窗口卡片行
       mList.innerHTML += `<div class="m-rank-item">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
           <span><b>#${i + 1}</b> · <span class="btag">${x.b.code}</span> <small style="color:var(--mut-light)">(${x.b.extraDesc})</small></span>
