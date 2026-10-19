@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>FF14 部队潜水艇全自动管家与配装航线规划器 v4.2</title>
+<title>FF14 部队潜水艇全自动管家与配装航线规划器 v1.0</title>
 <style>
   :root {
     --bg:#0f172a; --card:#1e293b; --panel:#0b1120; --bd:#334155;
@@ -168,8 +168,9 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>🚢 FF14 部队潜水艇管家 & 航线规划器 <small style="color:var(--grn);font-weight:normal;">v4.2 (零溢出完美适配版 · 五维达标高亮 · 五档Bonus色标)</small></h1>
+    <h1>🚢 FF14 部队潜水艇管家 & 航线规划器 <small style="color:var(--grn);font-weight:normal;">v1.0 (零溢出完美适配版 · 五维达标高亮 · 五档Bonus色标)</small></h1>
     <div class="head-btns">
+      <button class="btn" style="border-color:var(--blu);color:var(--blu);" onclick="downloadSelfHTML()">💾 下载离线HTML</button>
       <button class="btn" onclick="restoreInitialFleet()" title="恢复到你首次手动填入时的初始等级与经验">⏪ 恢复初始填入数据</button>
       <button class="btn" onclick="resetBlankFleet()" style="color:#f87171;">🗑️ 清空重置为0级</button>
     </div>
@@ -395,6 +396,16 @@ function saveFleet() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(fleetState));
   } catch (e) {}
   renderFleetBar();
+}
+
+function downloadSelfHTML() {
+  const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'FF14潜水艇管家_离线版.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 function resetBlankFleet() {
