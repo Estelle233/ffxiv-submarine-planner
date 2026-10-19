@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>FF14 部队潜水艇全自动管家与配装航线规划器 v1.2</title>
+<title>FF14 部队潜水艇全自动管家与配装航线规划器 v1.3</title>
 <style>
   :root {
     --bg:#0f172a; --card:#1e293b; --panel:#0b1120; --bd:#334155;
@@ -76,7 +76,7 @@
   .exp-bar-fill { height:100%; background:linear-gradient(90deg,var(--gold),#fde047); transition:width 0.3s; }
   .sub-voyage { margin-top:7px; padding-top:7px; border-top:1px dashed var(--bd); font-size:12px; word-break:break-word; }
 
-  .grid { display:grid; grid-template-columns:minmax(0, 415px) minmax(0, 1fr); gap:14px; width:100%; }
+  .grid { display:grid; grid-template-columns:minmax(0, 440px) minmax(0, 1fr); gap:14px; width:100%; }
   .card {
     background:var(--card); border:1px solid var(--bd); border-radius:10px;
     padding:13px; margin-bottom:13px; width:100%; overflow:hidden;
@@ -93,19 +93,36 @@
     width:100%; max-width:100%; background:var(--panel); border:1px solid var(--bd); color:var(--txt);
     padding:8px 10px; border-radius:7px; font-size:14px;
   }
+
+  /* 双层节点状态：已解锁(可勾选) + 可访问状态徽章 */
   .nodes {
-    display:grid; grid-template-columns:repeat(auto-fill, minmax(145px, 1fr)); gap:6px;
-    max-height:270px; overflow-y:auto; padding:6px; background:var(--panel);
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:6px;
+    max-height:310px; overflow-y:auto; padding:6px; background:var(--panel);
     border-radius:8px; border:1px solid var(--bd); width:100%;
   }
   .nd {
-    display:flex; align-items:center; gap:5px; padding:6px 8px;
-    background:var(--card); border-radius:5px; font-size:12.5px; cursor:pointer; user-select:none;
-    overflow:hidden;
+    display:flex; align-items:center; justify-content:space-between; gap:4px; padding:6px 8px;
+    background:var(--card); border-radius:6px; font-size:12px; cursor:pointer; user-select:none;
+    border:1px solid transparent; transition:0.12s;
   }
-  .nd input { width:15px; height:15px; margin:0; flex-shrink:0; }
-  .nd.lock { opacity:0.38; }
+  .nd:hover { border-color:var(--bd); }
   .nd.ulk { border-left:3px solid var(--gold); }
+  .nd.dead-end { border-left:3px solid #475569; }
+  .nd-left { display:flex; align-items:center; gap:5px; min-width:0; flex:1; }
+  .nd-left input { width:15px; height:15px; margin:0; flex-shrink:0; accent-color:var(--blu); }
+  .nd-right { display:flex; align-items:center; gap:4px; flex-shrink:0; }
+  .acc-tag { font-size:10.5px; padding:1px 5px; border-radius:4px; white-space:nowrap; }
+  .acc-ok { background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4); font-weight:bold; }
+  .acc-wait { background:rgba(245,158,11,0.18); color:#fbbf24; border:1px solid rgba(245,158,11,0.4); }
+  .acc-lock { background:rgba(100,116,139,0.18); color:#94a3b8; }
+
+  /* 3124 OJ 捞金智能提示面板 */
+  .oj-banner {
+    background:linear-gradient(135deg, rgba(245,158,11,0.18), rgba(16,185,129,0.12));
+    border:1.5px solid var(--gold); border-radius:10px; padding:12px 14px;
+    margin-bottom:14px; display:none;
+  }
+  .oj-head { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px; }
 
   .tiers { display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:12px; margin-bottom:16px; width:100%; }
   .tc {
@@ -146,13 +163,11 @@
   .drop-item { padding:7px 9px; border-bottom:1px solid #1e293b; font-size:12.5px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; border-radius:4px; gap:6px; flex-wrap:wrap; }
   .drop-item:hover, .drop-item:active { background:var(--card); }
 
-  /* 五维多档独立色标 */
   .st-no   { color:#64748b; font-weight:normal; }
   .st-grn  { color:#34d399; font-weight:bold; }
   .st-pur  { color:#c084fc; font-weight:bold; }
   .st-gold { color:#fbbf24; font-weight:bold; text-shadow:0 0 6px rgba(245,158,11,0.35); }
 
-  /* 五档 Bonus 配色：1金 / 2紫 / 3红 / 4绿 / 5灰 */
   .bn-1 { background:rgba(245,158,11,0.22); border:1px solid #f59e0b; color:#fbbf24; padding:2px 6px; border-radius:4px; font-size:11.5px; font-weight:bold; display:inline-block; }
   .bn-2 { background:rgba(168,85,247,0.22); border:1px solid #a855f7; color:#c084fc; padding:2px 6px; border-radius:4px; font-size:11.5px; font-weight:bold; display:inline-block; }
   .bn-3 { background:rgba(239,68,68,0.22); border:1px solid #ef4444; color:#f87171; padding:2px 6px; border-radius:4px; font-size:11.5px; font-weight:bold; display:inline-block; }
@@ -187,7 +202,7 @@
     .row3 { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
     .row3 > div:first-child { grid-column:span 2; }
     input, select { font-size:15px; padding:9px 10px; }
-    .nodes { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:5px; padding:5px; }
+    .nodes { grid-template-columns:minmax(0,1fr); gap:5px; padding:5px; }
     .tiers { grid-template-columns:minmax(0,1fr); }
     .table-wrap { display:none; }
     .mobile-rank-list { display:flex; }
@@ -200,7 +215,7 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>🚢 FF14 部队潜水艇管家 & 航线规划器 <small style="color:var(--grn);font-weight:normal;">v1.2 (综合均衡四维评分 · 收艇闹钟 · 智能标签 · 五维四色分档)</small></h1>
+    <h1>🚢 FF14 部队潜水艇管家 & 航线规划器 <small style="color:var(--grn);font-weight:normal;">v1.3 (双层解锁/可访问状态 · 智能3124 OJ捞金决策 · 综合四维评分)</small></h1>
     <div class="head-btns">
       <button class="btn" style="border-color:var(--grn);color:var(--grn);" onclick="forceUpdateApp()" title="强制绕过浏览器缓存拉取最新版本，您的潜艇存档数据100%保留！">🔄 获取最新版本</button>
       <button class="btn" style="border-color:var(--blu);color:var(--blu);" onclick="downloadSelfHTML()">💾 下载离线HTML</button>
@@ -263,6 +278,9 @@
               <option value="6">Map 6 · 南苍茫洋 (Lv.120~135)</option>
               <option value="7">Map 7 · 北洋 (Lv.135~145)</option>
             </select>
+	    <label id="gateCheckWrap" class="alarm-chk" style="margin-top:5px;font-size:11.5px;color:var(--gold);" title="当4艘艇中任意一艘跑完本图关底节点后会自动勾选；勾选后潜艇升级才能自动跳往下一海图">
+              <input type="checkbox" id="mapGateCleared" onchange="onGateCheckChange()"> <span id="gateCheckTxt">🔓 已探索本图关底点(开启下一图)</span>
+            </label>
           </div>
           <div>
             <label>部件池范围</label>
@@ -302,7 +320,7 @@
         <button class="btn btn-pri" onclick="calc()">🚀 立即计算【最优 / 次优 / 再次优】配装与路线</button>
       </div>
 
-      <!-- 掉落物搜索模块 (支持自增删历史标签，上限10个) -->
+      <!-- 掉落物搜索模块 -->
       <div class="card">
         <h2>
           <span>🔍 2. 掉落物搜索 <small id="tagCountTxt" style="color:var(--gold);font-weight:normal;font-size:12px;">(快捷标签 3/10)</small></span>
@@ -316,17 +334,26 @@
         <div id="dropResults" class="drop-list"></div>
       </div>
 
-      <!-- 节点勾选模块 -->
+      <!-- 双层状态节点勾选模块 -->
       <div class="card">
         <h2>
-          <span>3. 本海图已开启节点 <small style="color:var(--gold);font-weight:normal;font-size:12px;">(黄边=可开新点)</small></span>
-          <span style="display:flex;gap:6px;">
-            <button class="btn" style="padding:3px 8px;font-size:12px" onclick="chkAll(true)">全选可达</button>
-            <button class="btn" style="padding:3px 8px;font-size:12px" onclick="chkAll(false)">清空</button>
+          <span>3. 海图节点状态 <small style="color:var(--gold);font-weight:normal;font-size:11.5px;">(勾选=已解锁 | 右侧=可访问状态)</small></span>
+          <span style="display:flex;gap:4px;">
+            <button class="btn" style="padding:2px 6px;font-size:11.5px" onclick="chkAllUnlocked(true)" title="勾选全部节点为已解锁(含高等级节点)">全解锁</button>
+            <button class="btn" style="padding:2px 6px;font-size:11.5px" onclick="chkReachableUnlocked()" title="仅勾选当前等级≤潜艇等级的节点">仅可达</button>
+            <button class="btn" style="padding:2px 6px;font-size:11.5px" onclick="chkAllUnlocked(false)">清空</button>
           </span>
         </h2>
+        <div style="font-size:11.5px;color:var(--mut-light);margin-bottom:6px;line-height:1.4;">
+          💡 <b>使用说明</b>：只要某节点已在游戏列表里刷出来（哪怕等级不够进不去），都请<b>勾选左侧【已解锁】</b>！这样系统就知道它的前置节点已经完成开图任务，不再浪费权重去重复开图。
+        </div>
         <div id="nBox" class="nodes"></div>
-        <label style="margin-top:8px;">🎯 点击字母锁定【必经开图/打捞节点】(可多选，再次点击取消)：</label>
+        <div style="margin-top:8px;padding-top:7px;border-top:1px dashed var(--bd);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+          <label class="alarm-chk" style="font-size:12px;color:var(--gold);" title="当新解锁节点既无后续节点也不开新海图(如妖歌海E/G)时，暂时忽略它，等后续主线点等级到了再顺路访问">
+            <input type="checkbox" id="ignoreDeadEnd" onchange="saveFleet();calc()"> ⏭️ 智能忽略新解锁的「无后续死胡同节点」
+          </label>
+        </div>
+        <label style="margin-top:6px;">🎯 点击字母锁定【必经节点】(仅可访问节点可选)：</label>
         <div id="mBox" class="chips"></div>
       </div>
     </div>
@@ -335,6 +362,9 @@
     <div>
       <div class="card">
         <div id="previewBanner" class="preview-banner"></div>
+        <!-- 85级+ 溺没海 3124 OJ 捞金智能建议横幅 -->
+        <div id="ojAdvisorBanner" class="oj-banner"></div>
+
         <h2>
           <span>🏆 智能推荐：<b style="color:var(--gold)">最优</b> / <b style="color:var(--grn)">次优</b> / <b style="color:var(--blu)">再次优</b></span>
           <small id="statTxt" style="color:var(--mut-light);font-weight:normal;font-size:12px;"></small>
@@ -359,7 +389,7 @@
                 <th>#</th>
                 <th>部件组合 & 主流亲和</th>
                 <th>五维 (<span class="st-gold">优</span>/<span class="st-pur">良</span>/<span class="st-grn">达标</span>/<span class="st-no">未达标</span>)</th>
-                <th>最佳节点顺序 & 开图</th>
+                <th>最佳节点顺序 & 待开图</th>
                 <th>航距</th>
                 <th>期望总经验 (含Bonus)</th>
                 <th>升级趟数</th>
@@ -423,12 +453,66 @@ function downloadSelfHTML() {
   URL.revokeObjectURL(a.href);
 }
 
+// 各海图开启下一张海图的关底节点配置：[当前海图ID, 关底节点代码, 下一海图ID, 下一海图最低等级, 描述]
+const MAP_GATES = {
+  "1": { node: "AD", nextMap: "2", reqLv: 50,  desc: "已探索 AD 古代宝物库 (开启灰海)" },
+  "2": { node: "R",  nextMap: "3", reqLv: 70,  desc: "已探索 R 走锚海域 (开启翠浪海)" },
+  "3": { node: "T",  nextMap: "4", reqLv: 90,  desc: "已探索 T 海兽的墓地 (开启妖歌海)" },
+  "4": { node: "T",  nextMap: "5", reqLv: 105, desc: "已探索 T 海晶泉 (开启紫礁海)" },
+  "5": { node: "T",  nextMap: "6", reqLv: 120, desc: "已探索 T 多迪海底峡谷西 (开启南苍茫洋)" },
+  "6": { node: "T",  nextMap: "7", reqLv: 135, desc: "已探索 T 星痕水道深部 (开启北洋)" }
+};
+
+// 根据潜艇等级 + 已探索完成的关底节点，计算自动跳转的目标海图
+function getAutoTargetMapId(lv, currentMapId) {
+  const cleared = fleetState.clearedMapGates || {};
+  let targetMap = "1";
+  const order = ["1", "2", "3", "4", "5", "6"];
+  for (let mId of order) {
+    const gate = MAP_GATES[mId];
+    // 必须同时满足：1. 该图关底节点已被任意潜艇探索完成；2. 当前潜艇等级 >= 下一张海图开启等级
+    if (cleared[mId] && lv >= gate.reqLv) {
+      targetMap = gate.nextMap;
+    } else {
+      break;
+    }
+  }
+  return targetMap;
+}
+
+function syncGateCheckboxUI() {
+  const mapId = document.getElementById('mapId').value;
+  const wrap = document.getElementById('gateCheckWrap');
+  const chk = document.getElementById('mapGateCleared');
+  const txt = document.getElementById('gateCheckTxt');
+  if (!wrap) return;
+  const gate = MAP_GATES[mapId];
+  if (!gate) {
+    wrap.style.display = 'none'; // 北洋已是最后一张图
+    return;
+  }
+  wrap.style.display = 'inline-flex';
+  if (!fleetState.clearedMapGates) fleetState.clearedMapGates = {};
+  chk.checked = !!fleetState.clearedMapGates[mapId];
+  txt.textContent = `🔓 ${gate.desc}`;
+}
+
+function onGateCheckChange() {
+  const mapId = document.getElementById('mapId').value;
+  if (!fleetState.clearedMapGates) fleetState.clearedMapGates = {};
+  fleetState.clearedMapGates[mapId] = document.getElementById('mapGateCleared').checked;
+  saveFleet();
+  calc();
+}
+
 function getBlankState() {
   return {
     pool: "economy",
     mode: "balanced",
     maxH: "48",
+    ignoreDeadEnd: true,
     unlockedByMap: {},
+    clearedMapGates: {},
     dropTags: ["海底黏土", "炼金树脂", "经典眼镜"],
     alarmCfg: { sound: true, notify: false, modal: true },
     subs: [
@@ -453,12 +537,19 @@ function loadFleet() {
     if (!fleetState.alarmCfg) {
       fleetState.alarmCfg = { sound: true, notify: false, modal: true };
     }
+    if (!fleetState.clearedMapGates) {
+      fleetState.clearedMapGates = {};
+    }
+    if (typeof fleetState.ignoreDeadEnd !== 'boolean') {
+      fleetState.ignoreDeadEnd = true;
+    }
   } catch (e) {
     fleetState = getBlankState();
   }
   document.getElementById('pool').value = fleetState.pool || "economy";
   document.getElementById('mode').value = fleetState.mode || "balanced";
   document.getElementById('maxH').value = fleetState.maxH || "48";
+  document.getElementById('ignoreDeadEnd').checked = !!fleetState.ignoreDeadEnd;
   document.getElementById('almSound').checked = !!fleetState.alarmCfg.sound;
   document.getElementById('almNotify').checked = !!fleetState.alarmCfg.notify;
   document.getElementById('almModal').checked = !!fleetState.alarmCfg.modal;
@@ -470,6 +561,7 @@ function saveFleet() {
     fleetState.pool = document.getElementById('pool').value;
     fleetState.mode = document.getElementById('mode').value;
     fleetState.maxH = document.getElementById('maxH').value;
+    fleetState.ignoreDeadEnd = document.getElementById('ignoreDeadEnd').checked;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(fleetState));
   } catch (e) {}
   renderFleetBar();
@@ -615,7 +707,7 @@ function closeAlarmModal() {
 }
 
 function testAlarmNow() {
-  triggerSubAlarm('潜水艇-1 (测试提醒)', '1123', 'A → F → E');
+  triggerSubAlarm('潜水艇-1 (测试提醒)', '1123', 'C → F → E');
 }
 
 function exportVoyageICS(idx) {
@@ -724,6 +816,7 @@ function selectSub(idx) {
     ? `初始基准：Lv.${s.initBackup.lv} (${s.initBackup.curExp.toLocaleString()} EXP)`
     : `首次填入自动设为初始存档`;
   updateRemExpDisplay();
+  syncGateCheckboxUI();
   initNodes();
   renderFleetBar();
   calc();
@@ -733,19 +826,27 @@ function onSubStatInput(lvChanged) {
   const s = fleetState.subs[activeSubIdx];
   const rawLv = parseInt(document.getElementById('lv').value);
   const newLv = isNaN(rawLv) ? 0 : Math.min(145, Math.max(0, rawLv));
+  const isFirstEntry = (!s.initBackup && newLv > 0);
   s.lv = newLv;
 
   if (lvChanged && newLv > 0) {
     s.maxExp = EXP_TABLE[newLv] || 0;
     document.getElementById('maxExp').value = s.maxExp;
-    if (newLv < 50) s.mapId = "1";
-    else if (newLv < 70) s.mapId = "2";
-    else if (newLv < 90) s.mapId = "3";
-    else if (newLv < 105) s.mapId = "4";
-    else if (newLv < 120) s.mapId = "5";
-    else if (newLv < 135) s.mapId = "6";
-    else s.mapId = "7";
+
+    // 如果是首次录入高等级潜艇，默认将其等级之前的前置海图关底设为已通关；
+    // 如果已有存档，则严格按 getAutoTargetMapId (需前置关底已探索完成 + 等级达标) 自动跳转
+    if (isFirstEntry) {
+      if (!fleetState.clearedMapGates) fleetState.clearedMapGates = {};
+      if (newLv >= 50)  fleetState.clearedMapGates["1"] = true;
+      if (newLv >= 70)  fleetState.clearedMapGates["2"] = true;
+      if (newLv >= 90)  fleetState.clearedMapGates["3"] = true;
+      if (newLv >= 105) fleetState.clearedMapGates["4"] = true;
+      if (newLv >= 120) fleetState.clearedMapGates["5"] = true;
+      if (newLv >= 135) fleetState.clearedMapGates["6"] = true;
+    }
+    s.mapId = getAutoTargetMapId(newLv, s.mapId);
     document.getElementById('mapId').value = s.mapId;
+    syncGateCheckboxUI();
     initNodes();
   } else if (newLv > 0) {
     s.maxExp = Math.max(1, +document.getElementById('maxExp').value || EXP_TABLE[newLv] || 20000);
@@ -771,7 +872,15 @@ function updateRemExpDisplay() {
 
 function onMapChange() {
   const s = fleetState.subs[activeSubIdx];
+  // 手动切换海图下拉框时，完全自由预览，不被自动跳转规则拦截
   s.mapId = document.getElementById('mapId').value;
+  // 若用户手动切到了某张高级海图且勾选了节点，自动将前面的旧海图关底标记为已打通
+  const mNum = parseInt(s.mapId);
+  if (!fleetState.clearedMapGates) fleetState.clearedMapGates = {};
+  for (let i = 1; i < mNum; i++) {
+    fleetState.clearedMapGates[String(i)] = true;
+  }
+  syncGateCheckboxUI();
   initNodes();
   saveFleet();
   calc();
@@ -785,6 +894,7 @@ function getEffectiveMapLv(mapId) {
   return { subLv, minMapLv, effLv: Math.max(subLv, minMapLv), isPreview: subLv < minMapLv };
 }
 
+// ★ 重构：所有节点均可勾选「已解锁 (Unlocked)」，右侧并排展示「可访问 (Accessible)」状态
 function initNodes() {
   const mapId = document.getElementById('mapId').value;
   const m = MAPS[mapId];
@@ -796,12 +906,33 @@ function initNodes() {
 
   m.n.forEach(x => {
     const canEnter = effLv >= x[2];
-    const isChecked = canEnter && (!savedList || savedList.length === 0 || savedList.includes(x[0]));
+    // 若用户尚未自定义勾选过本海图，默认将当前等级可达的节点设为已解锁
+    const isUnlocked = savedList ? savedList.includes(x[0]) : canEnter;
+    const hasUnlocks = !!x[10];
+
+    let accHtml = '';
+    if (canEnter && isUnlocked) {
+      accHtml = `<span class="acc-tag acc-ok" title="已解锁且等级达标，可派遣探索">🚩可访问</span>`;
+    } else if (!canEnter && isUnlocked) {
+      accHtml = `<span class="acc-tag acc-wait" title="已在地图上解锁，但潜艇需升至Lv.${x[2]}才能访问">⏳已开·需Lv.${x[2]}</span>`;
+    } else {
+      accHtml = `<span class="acc-tag acc-lock" title="尚未在海图上解锁 (需Lv.${x[2]})">🔒未解锁(Lv.${x[2]})</span>`;
+    }
+
     const lbl = document.createElement('label');
-    lbl.className = 'nd' + (!canEnter ? ' lock' : '') + (x[10] ? ' ulk' : '');
+    lbl.className = 'nd' + (hasUnlocks ? ' ulk' : ' dead-end');
     const dropTip = x[12].filter(Boolean).join(' | ');
-    lbl.title = `进入等级: Lv.${x[2]} | 基础经验: ${x[3].toLocaleString()}\n阈值(探良/优|恩|收中/大): ${x[11].join('/')}\n掉落: ${dropTip || '无'}`;
-    lbl.innerHTML = `<input type="checkbox" value="${x[0]}" ${isChecked ? 'checked' : ''} ${!canEnter ? 'disabled' : ''} onchange="onNodeCheckChange()"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${x[1]} (${x[2]})</span>` + (x[10] ? `<small style="margin-left:auto;color:var(--gold);flex-shrink:0;">→${x[10]}</small>` : '');
+    lbl.title = `节点: ${x[1]} (进入等级 Lv.${x[2]})\n勾选框 = 是否已在海图列表解锁\n后续开启: ${x[10] || '无 (死胡同节点)'}\n基础经验: ${x[3].toLocaleString()}\n掉落: ${dropTip || '无'}`;
+    lbl.innerHTML = `
+      <div class="nd-left">
+        <input type="checkbox" value="${x[0]}" ${isUnlocked ? 'checked' : ''} onchange="onNodeCheckChange()">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:${isUnlocked?'var(--txt)':'var(--mut-light)'}">${x[1]}</span>
+      </div>
+      <div class="nd-right">
+        ${x[10] ? `<small style="color:var(--gold);">→${x[10]}</small>` : `<small style="color:var(--mut);">无后续</small>`}
+        ${accHtml}
+      </div>
+    `;
     box.appendChild(lbl);
   });
   syncChips();
@@ -812,16 +943,22 @@ function onNodeCheckChange() {
   const chks = Array.from(document.querySelectorAll('#nBox input:checked')).map(c => c.value);
   fleetState.unlockedByMap[mapId] = chks;
   saveFleet();
-  syncChips();
+  initNodes(); // 刷新右侧状态标签
   calc();
 }
 
 function syncChips() {
+  const mapId = document.getElementById('mapId').value;
+  const m = MAPS[mapId];
+  const { effLv } = getEffectiveMapLv(mapId);
   const mBox = document.getElementById('mBox');
   mBox.innerHTML = '';
   const chks = Array.from(document.querySelectorAll('#nBox input:checked')).map(c => c.value);
-  mustSet.forEach(k => { if (!chks.includes(k)) mustSet.delete(k); });
-  chks.forEach(c => {
+  // 只有既已解锁且等级可访问的节点才能被选为必经点
+  const visitableCodes = m.n.filter(x => chks.includes(x[0]) && effLv >= x[2]).map(x => x[0]);
+
+  mustSet.forEach(k => { if (!visitableCodes.includes(k)) mustSet.delete(k); });
+  visitableCodes.forEach(c => {
     const sp = document.createElement('span');
     sp.className = 'chip' + (mustSet.has(c) ? ' on' : '');
     sp.textContent = c;
@@ -835,8 +972,17 @@ function syncChips() {
   });
 }
 
-function chkAll(f) {
-  document.querySelectorAll('#nBox input').forEach(c => { if (!c.disabled) c.checked = f; });
+function chkAllUnlocked(f) {
+  document.querySelectorAll('#nBox input').forEach(c => { c.checked = f; });
+  onNodeCheckChange();
+}
+
+function chkReachableUnlocked() {
+  const mapId = document.getElementById('mapId').value;
+  const m = MAPS[mapId];
+  const { effLv } = getEffectiveMapLv(mapId);
+  const reachSet = new Set(m.n.filter(x => effLv >= x[2]).map(x => x[0]));
+  document.querySelectorAll('#nBox input').forEach(c => { c.checked = reachSet.has(c.value); });
   onNodeCheckChange();
 }
 
@@ -894,11 +1040,11 @@ function selectDropNode(mid, code, kw) {
   document.getElementById('mode').value = 'surv';
   initNodes();
   const chk = document.querySelector(`#nBox input[value="${code}"]`);
-  if (chk) { chk.disabled = false; chk.checked = true; }
+  if (chk) { chk.checked = true; }
+  onNodeCheckChange();
   mustSet.clear();
   mustSet.add(code);
   syncChips();
-  saveFleet();
   calc();
 }
 
@@ -926,7 +1072,6 @@ const BONUS_TIER_INFO = {
   5: { cls: 'bn-5', label: '5档: 基础无加成' }
 };
 
-// ★ 主流传家宝配装路线 (1111 → 1121 → 3113 → 1123/3123 → 3124) 亲和度评分 [0.0 ~ 1.0]
 const MAINSTREAM_EXACT = new Set(['1111', '1121', '3113', '1123', '3123', '3124']);
 function calcPartAffinity(a, b, c, d) {
   const code = `${a}${b}${c}${d}`;
@@ -940,23 +1085,41 @@ function calcPartAffinity(a, b, c, d) {
   return Math.min(0.95, score);
 }
 
-// 计算某节点可开启的「尚未解锁/尚未进入的后续目标」数量与描述
-function evalNodeUnlockValue(nd, checkedSet, effLv) {
+// ★ 核心修正：只要后续节点已经在 unlockedSet（已勾选已解锁）中，不管等级够不够访问，前置节点都不再有开图权重！
+function evalNodeUnlockValue(nd, unlockedSet, effLv) {
   const ulkStr = nd[10];
   if (!ulkStr) return { pts: 0, targets: [] };
   const rawTargets = ulkStr.replace(/，/g, '、').replace(/,/g, '、').split('、').map(s => s.trim()).filter(Boolean);
   let pts = 0;
   let activeTargets = [];
   for (let t of rawTargets) {
-    if (!checkedSet.has(t)) {
+    // 只有当后续目标尚未在 unlockedSet 中勾选时，才算作待解锁目标！
+    if (!unlockedSet.has(t)) {
       const isSpecial = t.includes('艇') || t.includes('海') || t.includes('洋');
-      // 特殊目标(潜艇槽位/下一海图)在等级接近该节点(±6级内)或刚好处于开荒期时赋予高优先级
       if (isSpecial && (effLv > nd[2] + 6)) continue;
       pts += isSpecial ? 1.5 : 1.0;
       activeTargets.push(t);
     }
   }
   return { pts, targets: activeTargets };
+}
+
+// 计算当前等级下 3124 跑溺没海 O → J 捞金航线的精确数据
+function calcOJGoldRoute(lv) {
+  const lb = lv <= 50 ? [0, 0, 0, 0, 0] : (LVB[lv] || [110, 140, 100, 130, 105]);
+  // 3124: 3体[-15,55,35,15,20], 1尾[-30,20,60,30,15], 2首[60,20,20,-15,15], 4桥[55,20,35,-15,50]
+  const surv = 70 + lb[0], ret = 115 + lb[1], spd = 150 + lb[2], rng = 15 + lb[3], fav = 100 + lb[4];
+  const m1 = MAPS["1"];
+  const nO = m1.n.find(x => x[0] === 'O');
+  const nJ = m1.n.find(x => x[0] === 'J');
+  // 从起点先去 O 再去 J (O → J 航距59，比 J → O 航距63 省4点航距、快25分钟)
+  const dStartO = Math.hypot(m1.s[0]-nO[7], m1.s[1]-nO[8], m1.s[2]-nO[9]);
+  const dOJ     = Math.hypot(nO[7]-nJ[7], nO[8]-nJ[8], nO[9]-nJ[9]);
+  const distOJ  = Math.round(dStartO/30) + nO[5] + Math.round(dOJ/30) + nJ[5];
+  const secOJ   = 43200 + Math.floor(dStartO*2394/spd) + Math.floor(nO[4]*4200/spd) + Math.floor(dOJ*2394/spd) + Math.floor(nJ[4]*4200/spd);
+  const baseExp = nO[3] + nJ[3];
+  const bonusExp = Math.round(baseExp * 1.75); // 85+级 3124在溺没海全三档过线
+  return { code: '3124', route: '溺没海: O → J', dist: distOJ, rng, spd, sec: secOJ, baseExp, bonusExp, surv, ret, fav };
 }
 
 function getExtraPartsDesc(a, b, c, d) {
@@ -1005,6 +1168,31 @@ function startVoyage(buildCode, routeStr, sec, expWithBonus) {
 function claimVoyage(idx) {
   const s = fleetState.subs[idx];
   if (!s.voyage) return;
+
+  // 1. 检查本次已完成的航线中，是否包含当前海图的关底节点 (如 AD / R / T)
+  // 注意：必须在点击「结束·累计经验」完成航程时才触发，航行途中不触发！
+  const finishedRouteCodes = s.voyage.route
+    .replace(/^.*:\s*/, '')
+    .split('→')
+    .map(c => c.trim())
+    .filter(Boolean);
+
+  if (!fleetState.clearedMapGates) fleetState.clearedMapGates = {};
+  const curGate = MAP_GATES[s.mapId];
+  let newlyUnlockedNextMap = null;
+
+  if (curGate && finishedRouteCodes.includes(curGate.node)) {
+    if (!fleetState.clearedMapGates[s.mapId]) {
+      fleetState.clearedMapGates[s.mapId] = true;
+      newlyUnlockedNextMap = curGate.nextMap;
+      // 自动为新开启的下一张海图解锁初始节点 A
+      if (!fleetState.unlockedByMap[curGate.nextMap] || fleetState.unlockedByMap[curGate.nextMap].length === 0) {
+        fleetState.unlockedByMap[curGate.nextMap] = ["A"];
+      }
+    }
+  }
+
+  // 2. 累加经验并处理升级
   let totalExp = s.curExp + s.voyage.exp;
   let lvUpCount = 0;
   while (s.lv < 145 && s.maxExp > 0 && totalExp >= s.maxExp) {
@@ -1012,22 +1200,27 @@ function claimVoyage(idx) {
     s.lv += 1;
     lvUpCount += 1;
     s.maxExp = EXP_TABLE[s.lv] || s.maxExp;
-    const m = MAPS[s.mapId];
-    if (m) {
-      const unlocked = fleetState.unlockedByMap[s.mapId] || m.n.filter(x => x[2] <= s.lv).map(x => x[0]);
-      m.n.forEach(node => {
-        if (node[2] <= s.lv && !unlocked.includes(node[0])) unlocked.push(node[0]);
-      });
-      fleetState.unlockedByMap[s.mapId] = unlocked;
-    }
   }
   s.curExp = totalExp;
   s.voyage = null;
+
+  // 3. 升级后检查是否满足「自动跳转到更高一级海图」的条件：
+  // 条件：上一张图解锁新海图的关底点已被4艘艇中的任意一艘访问完成 (clearedMapGates为true)，且当前艇等级 >= 新海图开启等级！
+  const autoMapId = getAutoTargetMapId(s.lv, s.mapId);
+  let mapJumped = false;
+  if (parseInt(autoMapId) > parseInt(s.mapId)) {
+    s.mapId = autoMapId;
+    mapJumped = true;
+  }
+
   saveFleet();
   selectSub(idx);
-  if (lvUpCount > 0) {
-    alert(`🎉 航程结算完成！${s.name} 自动累计经验并连升 ${lvUpCount} 级，当前达到 Lv.${s.lv}！`);
-  }
+
+  let msg = [];
+  if (lvUpCount > 0) msg.push(`🎉 ${s.name} 航程结算完成，连升 ${lvUpCount} 级，当前达到 Lv.${s.lv}！`);
+  if (newlyUnlockedNextMap) msg.push(`🗺️ 恭喜！本趟航程已成功探索关底节点【${curGate.node}】，正式为您开启【${MAPS[newlyUnlockedNextMap].name}】！`);
+  if (mapJumped) msg.push(`🚀 由于新海图已开启且该潜艇等级已达标，已自动为您切换至【${MAPS[s.mapId].name}】！`);
+  if (msg.length > 0) alert(msg.join('\n\n'));
 }
 
 function cancelVoyage(idx) {
@@ -1094,24 +1287,81 @@ function calc() {
     const pool = document.getElementById('pool').value;
     const maxSec = (+document.getElementById('maxH').value || 999) * 3600;
     const mode = document.getElementById('mode').value;
+    const ignoreDeadEnd = document.getElementById('ignoreDeadEnd').checked;
     const maxCap = lv >= 50 ? 80 : (lv <= 11 ? 20 : (lv <= 40 ? lv + 9 : 49 + (lv - 40) * 3));
     const lb = lv <= 50 ? [0, 0, 0, 0, 0] : (LVB[lv] || [110, 140, 100, 130, 105]);
 
+    // 获取所有已勾选为「已解锁」的节点集合 (包含等级还进不去的高级已解锁节点)
     const chks = Array.from(document.querySelectorAll('#nBox input:checked')).map(c => c.value);
-    const checkedSet = new Set(chks);
-    let avail = m.n.filter(x => checkedSet.has(x[0]) && lv >= x[2]);
-    if (!avail.length) {
-      avail = m.n.filter(x => lv >= x[2]).slice(0, 3);
-      avail.forEach(x => checkedSet.add(x[0]));
+    const unlockedSet = new Set(chks);
+
+    // 筛选出当前既「已解锁」又「等级可达 (lv >= node.lv)」的可访问节点
+    let visitableNodes = m.n.filter(x => unlockedSet.has(x[0]) && lv >= x[2]);
+    if (!visitableNodes.length) {
+      visitableNodes = m.n.filter(x => lv >= x[2]).slice(0, 3);
+      visitableNodes.forEach(x => unlockedSet.add(x[0]));
     }
 
+    // 预计算每个可访问节点的「未解锁后续目标」价值
+    const unlockInfoMap = new Map();
+    let totalActiveUnlockPts = 0;
+    visitableNodes.forEach(x => {
+      const info = evalNodeUnlockValue(x, unlockedSet, lv);
+      unlockInfoMap.set(x[0], info);
+      totalActiveUnlockPts += info.pts;
+    });
+
+    // 检查是否存在「已解锁但因等级不足暂时进不去的有价值后续节点」
+    const unlockedButWaitNodes = m.n.filter(x => unlockedSet.has(x[0]) && lv < x[2]);
+    const nextMeaningfulWaitNode = unlockedButWaitNodes.find(x => !!x[10]);
+
+    // ★ 处理「新解锁节点若无后续节点也不开新海图，则暂时忽略」逻辑
+    let ignoredDeadEndNames = [];
+    if (ignoreDeadEnd && nextMeaningfulWaitNode) {
+      // 如果存在等级更高的待访问主线点(如96级H、97级J)，检查当前最高等级的可访问节点是否只是个无后续的死胡同(如95级G)
+      const maxVisLv = Math.max(...visitableNodes.map(x => x[2]));
+      const filtered = visitableNodes.filter(x => {
+        const isHighestNewlyReached = (x[2] === maxVisLv && x[2] > m.n[0][2]);
+        const isDeadEnd = !x[10]; // 既无后续节点也不开新海图
+        if (isHighestNewlyReached && isDeadEnd && !mustSet.has(x[0])) {
+          ignoredDeadEndNames.push(`${x[1]}(Lv.${x[2]})`);
+          return false;
+        }
+        return true;
+      });
+      if (filtered.length > 0) visitableNodes = filtered;
+    }
+
+    // ★ 85级+ 溺没海 3124 OJ 捞金智能判断横幅
+    const ojBanner = document.getElementById('ojAdvisorBanner');
+    if (lv >= 85 && mapId !== "1" && totalActiveUnlockPts === 0 && unlockedButWaitNodes.length > 0) {
+      const oj = calcOJGoldRoute(lv);
+      const waitListStr = unlockedButWaitNodes.map(x => `${x[0]}(需Lv.${x[2]}${x[10]?'·开'+x[10]:'·死胡同'})`).join('、');
+      const nextTargetStr = nextMeaningfulWaitNode ? `<b>${nextMeaningfulWaitNode[1]} (Lv.${nextMeaningfulWaitNode[2]})</b>` : `下一阶段节点`;
+      const deadEndTip = ignoredDeadEndNames.length ? `<br>⏭️ <i>已自动为您忽略无后续死胡同节点：${ignoredDeadEndNames.join('、')}，建议等升至 ${nextTargetStr} 可访问时再顺路回本图开图！</i>` : '';
+
+      ojBanner.style.display = 'block';
+      ojBanner.innerHTML = `
+        <div class="oj-head">
+          <span style="color:var(--gold);font-weight:bold;font-size:14px;">🪙 智能战略建议：当前可去【溺没海】跑 3124 OJ 航线捞金（顺便升级）！</span>
+          <button class="btn-go" style="background:var(--gold);color:#000;border-color:var(--gold);" onclick="startVoyage('${oj.code}','${oj.route}',${oj.sec},${oj.bonusExp})">🚢 一键派【${s.name}】跑 3124 溺没海 O→J 捞金</button>
+        </div>
+        <div style="font-size:12.5px;color:var(--txt);line-height:1.5;">
+          📌 <b>原因诊断</b>：当前海图所有可访问节点的后续目标（<span style="color:var(--blu)">${waitListStr}</span>）均已解锁，但受限于当前潜艇等级 (Lv.${lv}) 暂无法进入探索。${deadEndTip}<br>
+          💰 <b>3124 溺没海 O→J 收益预览</b>：精确耗时 <b style="color:var(--gold)">${fmtT(oj.sec)}</b> | 期望经验 <b style="color:var(--grn)">${oj.bonusExp.toLocaleString()}</b> (面板 ${oj.baseExp.toLocaleString()}) | 稳定产出高价沉船首饰换金币！也可继续使用下方本海图高经验练级路线快速冲级。
+        </div>
+      `;
+    } else {
+      ojBanner.style.display = 'none';
+    }
+
+    let avail = [...visitableNodes];
     let rawB = [];
     if (pool === 'custom') {
       const tk = document.getElementById('cBuild').value.trim().match(/[1-5]改?/g);
       if (!tk || tk.length !== 4) { alert('部件格式错误'); return; }
       rawB.push(tk);
     } else if (pool === 'economy') {
-      // 主流传家宝路线 (1111 → 1121 → 3113 → 1123/3123 → 3124) 及衍生经济组合
       rawB = [
         ['1','1','1','1'], ['1','1','2','1'], ['3','1','1','3'],
         ['1','1','2','3'], ['3','1','2','3'], ['3','1','2','4'],
@@ -1151,13 +1401,6 @@ function calc() {
     const maxR = Math.max(...builds.map(b => b.rng));
     const mustArr = Array.from(mustSet);
 
-    // 预计算每个可用节点的开图价值 (开启尚未探索的后续节点)
-    const unlockInfoMap = new Map();
-    avail.forEach(x => {
-      unlockInfoMap.set(x[0], evalNodeUnlockValue(x, checkedSet, lv));
-    });
-
-    // 智能候选节点剪枝：确保所有「必经点」和「有未探索后续节点的开图点」100% 保留！
     if (avail.length > 10) {
       const unlockCodes = avail.filter(x => unlockInfoMap.get(x[0]).pts > 0).map(x => x[0]);
       const byExp = [...avail].sort((a, b) => b[3] - a[3]).slice(0, 7);
@@ -1219,7 +1462,6 @@ function calc() {
     dfs(0, 0, 0, 0, 0, 0, 0, [], []);
     const pRoutes = Array.from(bestByMask.values()).map(x => x.r);
 
-    // 收集所有合法的 (build, route) 候选方案，并计算四维全局极值用于归一化
     let allValidPairs = [];
     let maxTotExp = 1, maxExph = 1, maxUlkPts = 0;
 
@@ -1260,7 +1502,6 @@ function calc() {
       }
     }
 
-    // 根据当前选择的模式为所有方案打分
     let byBuildMap = new Map();
     for (let item of allValidPairs) {
       const { b, r, totBonusExp, exph, sOk, sHigh } = item;
@@ -1268,14 +1509,10 @@ function calc() {
       let sc = 0;
       let compScore = 0;
 
-      // 计算四维综合评分 (0~100分)：
-      // 1. 单趟总经验归一化得分 (权重 28%)
       const normTot = totBonusExp / maxTotExp;
-      // 2. 每小时经验效率归一化得分 (权重 28%)
       const normExph = exph / maxExph;
-      // 3. 未探索后续节点开图得分 (权重 26%：若当前海图无可开新点则自动平分给总经验与效率)
+      // 若所有后续节点均已解锁 (maxUlkPts === 0)，开图权重自动平分给单趟总经验与每小时效率
       const normUlk = maxUlkPts > 0 ? (r.ulkPts / maxUlkPts) : (normTot * 0.5 + normExph * 0.5);
-      // 4. 主流传家宝部件亲和度得分 (权重 18%，略低于平均权重)
       const normPart = b.affinity;
 
       compScore = (normTot * 0.28 + normExph * 0.28 + normUlk * 0.26 + normPart * 0.18) * 100;
@@ -1333,7 +1570,7 @@ function calc() {
           targets.push(`${nd[0]}→${info.targets.join(',')}`);
         }
       }
-      return targets.length ? `<span style="color:var(--gold);font-size:11.5px;margin-left:4px;">(🗝️开图: ${targets.join(' | ')})</span>` : '';
+      return targets.length ? `<span style="color:var(--gold);font-size:11.5px;margin-left:4px;">(🗝️待开图: ${targets.join(' | ')})</span>` : `<span style="color:var(--mut-light);font-size:11px;margin-left:4px;">(后续已全开)</span>`;
     }
 
     top3.forEach((x, i) => {
