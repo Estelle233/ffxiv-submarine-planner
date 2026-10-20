@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>FF14 部队潜水艇全自动管家与配装航线规划器 v1.3</title>
+<title>FF14 部队潜水艇全自动管家与配装航线规划器 v1.4</title>
 <style>
   :root {
     --bg:#0f172a; --card:#1e293b; --panel:#0b1120; --bd:#334155;
@@ -185,6 +185,36 @@
     box-shadow:0 10px 30px rgba(0,0,0,0.6);
   }
 
+  /* 更新公告 */
+  .bell-btn { position:relative; }
+  .bell-dot { position:absolute; top:3px; right:4px; width:8px; height:8px; border-radius:50%; background:var(--red); display:none; }
+  .bell-btn.unread .bell-dot { display:block; }
+  .notice-box { max-width:520px; text-align:left; max-height:86vh; display:flex; flex-direction:column; }
+  .notice-body { overflow-y:auto; margin:0 0 14px 0; font-size:13.5px; line-height:1.6; color:var(--txt); }
+  .notice-ver { margin-bottom:12px; }
+  .notice-ver h4 { margin:0 0 4px 0; color:var(--gold); font-size:14px; }
+  .notice-ver ul { margin:0; padding-left:20px; }
+  .notice-ver li { margin:2px 0; }
+  .notice-ver.old h4 { color:var(--mut-light); }
+  .notice-ver.old { opacity:0.8; }
+
+  /* 部件池面板 */
+  .pool-panel { display:none; margin-bottom:10px; background:var(--panel); border:1px solid var(--bd); border-radius:8px; padding:10px; }
+  .pool-panel-head { display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap; font-size:12.5px; color:var(--mut-light); margin-bottom:6px; }
+  .icon-btns { display:flex; gap:5px; flex-wrap:wrap; }
+  .icon-btn { padding:3px 8px; font-size:12px; }
+  .chip.off { opacity:0.55; text-decoration:line-through; }
+  .chip.on .chip-del { background:rgba(0,0,0,0.22); color:#000; }
+  .chip.on .chip-del:hover { background:var(--red); color:#fff; }
+  .chip input[type=checkbox] { margin:0; width:auto; }
+  .inv-grid { display:grid; grid-template-columns:minmax(56px,auto) repeat(4, minmax(0,1fr)); gap:4px 6px; align-items:center; font-size:12.5px; }
+  .inv-grid .inv-h { color:var(--mut-light); font-weight:bold; text-align:center; }
+  .inv-grid .inv-name { color:var(--txt); white-space:nowrap; }
+  .inv-cell { display:flex; align-items:center; gap:3px; justify-content:center; border-radius:4px; padding:2px; }
+  .inv-cell.on { background:rgba(245,158,11,0.14); }
+  .inv-cell input[type=checkbox] { width:auto; margin:0; }
+  .inv-cell input[type=number] { width:44px; padding:3px 4px; font-size:12.5px; text-align:center; }
+
   @media (max-width: 1080px) {
     .grid { grid-template-columns:minmax(0, 1fr); }
   }
@@ -195,6 +225,9 @@
     header h1 small { display:block; font-size:12px; margin-top:2px; }
     .head-btns { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:6px; }
     .head-btns .btn { width:100%; padding:8px 6px; font-size:12px; }
+    .head-btns { grid-template-columns:44px 1fr 1fr; }
+    .head-btns .bell-btn { grid-row:span 2; font-size:16px; }
+    .inv-cell input[type=number] { width:38px; font-size:13px; padding:4px 2px; }
     .fleet-bar { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
     .sub-slot { padding:9px 10px; }
     .sub-head { font-size:13.5px; }
@@ -215,8 +248,9 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>🚢 FF14 部队潜水艇管家 & 航线规划器 <small style="color:var(--grn);font-weight:normal;">v1.3 (双层解锁/可访问状态 · 智能3124 OJ捞金决策 · 综合四维评分)</small></h1>
+    <h1>🚢 FF14 部队潜水艇管家 & 航线规划器 <small style="color:var(--grn);font-weight:normal;">v1.4 (双层解锁/可访问状态 · 智能3124 OJ捞金决策 · 综合四维评分)</small></h1>
     <div class="head-btns">
+      <button class="btn bell-btn" id="bellBtn" onclick="openNotice()" title="查看本版本更新内容" aria-label="查看本版本更新内容">🔔<span class="bell-dot"></span></button>
       <button class="btn" style="border-color:var(--grn);color:var(--grn);" onclick="forceUpdateApp()" title="强制绕过浏览器缓存拉取最新版本，您的潜艇存档数据100%保留！">🔄 获取最新版本</button>
       <button class="btn" style="border-color:var(--blu);color:var(--blu);" onclick="downloadSelfHTML()">💾 下载离线HTML</button>
       <button class="btn" onclick="restoreInitialFleet()" title="恢复到你首次手动填入时的初始等级与经验">⏪ 恢复初始数据</button>
@@ -284,18 +318,44 @@
           </div>
           <div>
             <label>部件池范围</label>
-            <select id="pool" onchange="document.getElementById('cRow').style.display=(this.value==='custom'?'block':'none');saveFleet();calc()">
+            <select id="pool" onchange="onPoolChange()">
               <option value="economy" selected>💰 经济平民流 (1111→1121→3113→1123/3124)</option>
               <option value="unmod">🔧 全部【不改配件】(零改全枚举)</option>
-              <option value="common">📦 常用经典配装 (含4254/3124/改级)</option>
+              <option value="common">📦 常用经典配装 (可自行增删勾选)</option>
               <option value="all">👑 允许【全部配件 (含全改)】</option>
-              <option value="custom">✏️ 手动指定唯一部件组合</option>
+              <option value="custom">🧰 当前已有部件组合 (按库存搭配)</option>
             </select>
           </div>
         </div>
-        <div id="cRow" style="display:none;margin-bottom:10px;">
-          <label>输入指定部件代码 (如 1121, 1123, 3123, 4254, 4改2改5改4改)</label>
-          <input type="text" id="cBuild" value="1123" onchange="calc()">
+
+        <!-- 常用经典配装列表 -->
+        <div id="commonPanel" class="pool-panel">
+          <div class="pool-panel-head">
+            <span>📦 常用配装 <b id="commonCountTxt" style="color:var(--gold);"></b> · 点击勾选/取消，× 删除</span>
+            <span class="icon-btns">
+              <button class="btn icon-btn" onclick="saveCommonAsDefault()" title="把当前列表保存为默认组合 (永久新增 / 永久删除)">💾 存为默认</button>
+              <button class="btn icon-btn" onclick="restoreCommonDefault()" title="撤销临时改动，回到已保存的默认组合">↩️ 恢复默认</button>
+              <button class="btn icon-btn" style="color:#f87171;" onclick="factoryResetCommon()" title="清除你保存的默认组合，恢复工具自带的初始组合">🏭 初始化</button>
+            </span>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <input type="text" id="commonInput" placeholder="输入部件代码添加 (如 1111 / 4254 / 4改2改5改4改)" onkeydown="if(event.key==='Enter')addCommonBuild()">
+            <button class="btn" style="white-space:nowrap;border-color:var(--gold);color:var(--gold);" onclick="addCommonBuild()">➕ 添加</button>
+          </div>
+          <div id="commonChips" class="chips"></div>
+        </div>
+
+        <!-- 当前已有部件 -->
+        <div id="invPanel" class="pool-panel">
+          <div class="pool-panel-head">
+            <span>🧰 勾选已有部件并填写数量 (数量包含已装在潜艇上的；其他艇航行中占用的部件会自动扣除)</span>
+            <span class="icon-btns">
+              <button class="btn icon-btn" onclick="setInventoryAll(0)" title="清空全部部件">🧹 清空</button>
+              <button class="btn icon-btn" onclick="setInventoryAll(1)" title="全部部件各设为 1 个">☑️ 全选</button>
+            </span>
+          </div>
+          <div id="invGrid" class="inv-grid"></div>
+          <div id="invSummary" style="font-size:12px;color:var(--mut-light);margin-top:6px;"></div>
         </div>
         <div class="row">
           <div>
@@ -427,6 +487,15 @@
   </div>
 </div>
 
+<!-- 更新公告弹窗 -->
+<div id="noticeModal" class="modal-mask" onclick="if(event.target===this)closeNotice()">
+  <div class="modal-box notice-box">
+    <h3 style="margin:0 0 10px 0;color:var(--gold);font-size:1.15rem;">🔔 更新公告 <small id="noticeVerTxt" style="color:var(--mut-light);font-weight:normal;font-size:12px;"></small></h3>
+    <div id="noticeBody" class="notice-body"></div>
+    <button class="btn btn-pri" style="margin-top:0;" onclick="closeNotice()">知道啦</button>
+  </div>
+</div>
+
 <script>
 const EXP_TABLE = {0:6180,1:6180,2:12504,3:18972,4:25581,5:32331,6:39221,7:46251,8:53418,9:60721,10:68161,11:75735,12:83443,13:91283,14:99256,15:107359,16:115591,17:123953,18:132442,19:141058,20:149799,21:158666,22:167656,23:176770,24:186005,25:195361,26:204838,27:214434,28:224148,29:233979,30:243927,31:253991,32:264169,33:274462,34:284867,35:295384,36:306012,37:316751,38:327599,39:338556,40:349621,41:360793,42:372071,43:383454,44:394941,45:406533,46:418227,47:430023,48:441921,49:453919,50:466016,51:551237,52:566099,53:582554,54:1497759,55:600864,56:621107,57:643477,58:668186,59:2078961,60:695566,61:725781,62:759114,63:795877,64:2509232,65:840559,66:889710,67:943775,68:1003248,69:3009743,70:1075209,71:1154367,72:1241440,73:1337221,74:4011663,75:1453116,76:1580600,77:1720833,78:1875089,79:5625266,80:2061738,81:2267053,82:2492899,83:2741330,84:8223989,85:3041931,86:3372592,87:3736319,88:4136419,89:12409258,90:4620540,91:5153074,92:5738860,93:6383225,94:19149676,95:7162907,96:8020557,97:8963972,98:10001729,99:30005186,100:11257414,101:12638668,102:14158047,103:15829365,104:47488094,105:17851658,106:17649406,107:18090643,108:18542909,109:47516207,110:19481645,111:19968687,112:20467907,113:20979605,114:53760240,115:22041699,116:22592742,117:23157563,118:23736502,119:60824790,120:24938164,121:25561619,122:26200660,123:26855677,124:68817675,125:28215249,126:28920632,127:29643649,128:30384742,129:77860906,130:31922973,131:32721049,132:33539076,133:34377553,134:88092482,135:36117919,136:37020870,137:37946392,138:38895053,139:99668577,140:40864117,141:41885721,142:42932865,143:44006188,144:112765858,145:46234004};
 
@@ -443,6 +512,230 @@ const STORAGE_KEY = 'ff14_sub_fleet_v4_safe';
 let activeSubIdx = 0;
 let mustSet = new Set();
 let fleetState = null;
+
+// ================= 更新公告 =================
+const APP_VERSION = 'v1.4';
+const NOTICE_SEEN_KEY = 'ff14_sub_notice_seen';
+const CHANGELOG = [
+  {
+    ver: 'v1.4', date: '2026-10-20', items: [
+      '🧮 经验加成模型改为：每满足一项 +25%，最高 ×2.0 (收集过最优门槛为保底必中，探索与恩惠为概率触发)',
+      '🎲 新增「经验加成口径」选项：保底 / 平均',
+      '🗺️ 修正全部 143 个海域的探索 / 收集 / 恩惠门槛',
+      '📈 修正每级升级所需经验表、等级成长加成，以及甲鲎首、腔棘鱼首的部件数值',
+      '🧭 航距公式改为 floor(直线距离 × 0.035)',
+      '🧰 部件池新增「当前已有部件组合」：勾选已有部件并填写数量，只在库存范围内搭配配装与航线',
+      '📦「常用经典配装」可自由勾选、删除，输入代码 (如 1111) 添加新组合；支持 存为默认 / 恢复默认 / 初始化',
+      '🔔 新增更新公告，之后可随时点击页面上方的小铃铛查看'
+    ]
+  }
+];
+
+function renderNotice() {
+  document.getElementById('noticeVerTxt').textContent = `当前版本 ${APP_VERSION}`;
+  document.getElementById('noticeBody').innerHTML = CHANGELOG.map((c, i) => `
+    <div class="notice-ver${i > 0 ? ' old' : ''}">
+      <h4>${c.ver} <small style="font-weight:normal;color:var(--mut-light);">${c.date}</small></h4>
+      <ul>${c.items.map(t => `<li>${t}</li>`).join('')}</ul>
+    </div>`).join('');
+}
+
+function openNotice() {
+  renderNotice();
+  document.getElementById('noticeModal').style.display = 'flex';
+}
+
+function closeNotice() {
+  document.getElementById('noticeModal').style.display = 'none';
+  try { localStorage.setItem(NOTICE_SEEN_KEY, APP_VERSION); } catch (e) {}
+  document.getElementById('bellBtn').classList.remove('unread');
+}
+
+function checkNoticeOnLoad() {
+  let seen = null;
+  try { seen = localStorage.getItem(NOTICE_SEEN_KEY); } catch (e) {}
+  if (seen !== APP_VERSION) {
+    document.getElementById('bellBtn').classList.add('unread');
+    openNotice();
+  }
+}
+
+// ================= 部件代码工具 =================
+const PART_KEYS = ['1','2','3','4','5','1改','2改','3改','4改','5改'];
+const SLOT_KEYS = ['H','S','BO','BR'];
+const SLOT_NAMES = { H: '船体', S: '船尾', BO: '船首', BR: '舰桥' };
+
+// "1123" / "4改2改5改4改" / "4改-2改-5改-4改" → ['4改','2改','5改','4改']；格式不对返回 null
+function parseBuildCode(str) {
+  const tk = String(str || '').replace(/\s/g, '').match(/[1-5]改?/g);
+  return tk && tk.length === 4 && tk.join('') === String(str).replace(/[\s\-]/g, '') ? tk : null;
+}
+
+function formatBuildCode(tk) {
+  const s = tk.join('');
+  return s.includes('改') ? tk.join('-') : s;
+}
+
+// ================= 常用经典配装 =================
+const COMMON_DEFAULT_KEY = 'ff14_sub_common_default';
+const FACTORY_COMMON_BUILDS = [
+  '1111','1121','1122','1123','3113','3122','3123','3124',
+  '4123','3153','4254','4354','4244','4改2改5改4改','3改1改2改3改','4改1改2改3改'
+];
+
+function getCommonDefault() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(COMMON_DEFAULT_KEY));
+    if (Array.isArray(raw) && raw.every(x => x && parseBuildCode(x.c))) return raw;
+  } catch (e) {}
+  return FACTORY_COMMON_BUILDS.map(c => ({ c, on: true }));
+}
+
+function renderCommonBuilds() {
+  const list = fleetState.commonBuilds || [];
+  const onCnt = list.filter(x => x.on).length;
+  document.getElementById('commonCountTxt').textContent = `(已勾选 ${onCnt}/${list.length})`;
+  document.getElementById('commonChips').innerHTML = list.map((x, i) => {
+    const tk = parseBuildCode(x.c);
+    const tip = tk.map((p, k) => `${PNAMES[p]}${['体','尾','首','桥'][k]}`).join(' + ');
+    return `<span class="chip ${x.on ? 'on' : 'off'}" title="${tip}" onclick="toggleCommonBuild(${i})">
+      <input type="checkbox" ${x.on ? 'checked' : ''} tabindex="-1" style="pointer-events:none;">
+      <span>${formatBuildCode(tk)}</span>
+      <span class="chip-del" title="从列表删除" onclick="event.stopPropagation();removeCommonBuild(${i})">×</span>
+    </span>`;
+  }).join('') || '<span style="color:var(--mut-light);font-size:12px;">列表为空，请在上方输入部件代码添加</span>';
+}
+
+function onCommonChanged() {
+  saveFleet();
+  renderCommonBuilds();
+  calc();
+}
+
+function toggleCommonBuild(i) {
+  fleetState.commonBuilds[i].on = !fleetState.commonBuilds[i].on;
+  onCommonChanged();
+}
+
+function removeCommonBuild(i) {
+  fleetState.commonBuilds.splice(i, 1);
+  onCommonChanged();
+}
+
+function addCommonBuild() {
+  const input = document.getElementById('commonInput');
+  const tk = parseBuildCode(input.value);
+  if (!tk) {
+    alert('部件代码格式不对！请按 船体·船尾·船首·舰桥 的顺序输入 4 个部件，例如 1111、4254、4改2改5改4改 (1鲨鱼 2甲鲎 3须鲸 4腔棘鱼 5希尔德拉)。');
+    return;
+  }
+  const c = tk.join('');
+  const exist = fleetState.commonBuilds.find(x => x.c === c);
+  if (exist) {
+    exist.on = true;
+  } else {
+    fleetState.commonBuilds.push({ c, on: true });
+  }
+  input.value = '';
+  onCommonChanged();
+}
+
+function saveCommonAsDefault() {
+  if (!confirm('确定把当前列表 (含勾选状态) 保存为你的默认常用组合吗？\n之后「↩️ 恢复默认」会回到这份列表。')) return;
+  try { localStorage.setItem(COMMON_DEFAULT_KEY, JSON.stringify(fleetState.commonBuilds)); } catch (e) {}
+  alert('✅ 已保存为默认常用组合。');
+}
+
+function restoreCommonDefault() {
+  if (!confirm('确定撤销临时改动，恢复为已保存的默认常用组合吗？')) return;
+  fleetState.commonBuilds = getCommonDefault();
+  onCommonChanged();
+}
+
+function factoryResetCommon() {
+  if (!confirm('确定要完全初始化吗？\n这会清除你保存的默认组合，恢复为工具自带的初始常用组合。')) return;
+  try { localStorage.removeItem(COMMON_DEFAULT_KEY); } catch (e) {}
+  fleetState.commonBuilds = FACTORY_COMMON_BUILDS.map(c => ({ c, on: true }));
+  onCommonChanged();
+}
+
+// ================= 当前已有部件 =================
+function getBlankInventory() {
+  return { H: { '1': 1 }, S: { '1': 1 }, BO: { '1': 1 }, BR: { '1': 1 } };
+}
+
+function renderInventory() {
+  const inv = fleetState.inventory;
+  let html = '<div></div>' + SLOT_KEYS.map(sk => `<div class="inv-h">${SLOT_NAMES[sk]}</div>`).join('');
+  for (const p of PART_KEYS) {
+    html += `<div class="inv-name">${PNAMES[p]}</div>`;
+    for (const sk of SLOT_KEYS) {
+      const n = inv[sk][p] || 0;
+      html += `<label class="inv-cell ${n > 0 ? 'on' : ''}" title="${PNAMES[p]}${SLOT_NAMES[sk]}">
+        <input type="checkbox" ${n > 0 ? 'checked' : ''} onchange="onInvCheck('${sk}','${p}',this.checked)" aria-label="${PNAMES[p]}${SLOT_NAMES[sk]}">
+        <input type="number" min="0" max="99" inputmode="numeric" value="${n}" onchange="onInvQty('${sk}','${p}',this.value)" aria-label="${PNAMES[p]}${SLOT_NAMES[sk]} 数量">
+      </label>`;
+    }
+  }
+  document.getElementById('invGrid').innerHTML = html;
+  const occ = getOccupiedParts();
+  const occTxt = Object.entries(occ).filter(([, v]) => v > 0).map(([k, v]) => { const [sk, p] = k.split('|'); return `${PNAMES[p]}${SLOT_NAMES[sk]}×${v}`; });
+  document.getElementById('invSummary').textContent = occTxt.length ? `⛵ 其他潜艇航行中占用：${occTxt.join('、')}` : '';
+}
+
+function onInventoryChanged() {
+  saveFleet();
+  renderInventory();
+  calc();
+}
+
+function onInvCheck(sk, p, checked) {
+  const cur = fleetState.inventory[sk][p] || 0;
+  fleetState.inventory[sk][p] = checked ? Math.max(1, cur) : 0;
+  onInventoryChanged();
+}
+
+function onInvQty(sk, p, val) {
+  fleetState.inventory[sk][p] = Math.max(0, Math.min(99, parseInt(val, 10) || 0));
+  onInventoryChanged();
+}
+
+function setInventoryAll(n) {
+  if (n === 0 && !confirm('确定清空全部已有部件吗？')) return;
+  for (const sk of SLOT_KEYS) for (const p of PART_KEYS) fleetState.inventory[sk][p] = n;
+  onInventoryChanged();
+}
+
+// 当前选中潜艇以外、正在航行的潜艇所占用的部件
+function getOccupiedParts() {
+  const occ = {};
+  fleetState.subs.forEach((s, i) => {
+    if (i === activeSubIdx || !s.voyage) return;
+    const tk = parseBuildCode(s.voyage.build);
+    if (!tk) return;
+    tk.forEach((p, k) => { const key = `${SLOT_KEYS[k]}|${p}`; occ[key] = (occ[key] || 0) + 1; });
+  });
+  return occ;
+}
+
+function getAvailableParts() {
+  const occ = getOccupiedParts();
+  const res = {};
+  for (const sk of SLOT_KEYS) {
+    res[sk] = PART_KEYS.filter(p => (fleetState.inventory[sk][p] || 0) - (occ[`${sk}|${p}`] || 0) > 0);
+  }
+  return res;
+}
+
+function onPoolChange() {
+  const pool = document.getElementById('pool').value;
+  document.getElementById('commonPanel').style.display = pool === 'common' ? 'block' : 'none';
+  document.getElementById('invPanel').style.display = pool === 'custom' ? 'block' : 'none';
+  if (pool === 'common') renderCommonBuilds();
+  if (pool === 'custom') renderInventory();
+  saveFleet();
+  calc();
+}
 
 function forceUpdateApp() {
   const url = new URL(window.location.href);
@@ -523,6 +816,8 @@ function getBlankState() {
     clearedMapGates: {},
     dropTags: ["海底黏土", "炼金树脂", "经典眼镜"],
     alarmCfg: { sound: true, notify: false, modal: true },
+    commonBuilds: getCommonDefault(),
+    inventory: getBlankInventory(),
     subs: [
       { name: "潜水艇-1", lv: 0, curExp: 0, maxExp: 20000, mapId: "1", voyage: null, initBackup: null },
       { name: "潜水艇-2", lv: 0, curExp: 0, maxExp: 20000, mapId: "1", voyage: null, initBackup: null },
@@ -551,6 +846,12 @@ function loadFleet() {
     if (typeof fleetState.ignoreDeadEnd !== 'boolean') {
       fleetState.ignoreDeadEnd = true;
     }
+    if (!Array.isArray(fleetState.commonBuilds) || !fleetState.commonBuilds.every(x => x && parseBuildCode(x.c))) {
+      fleetState.commonBuilds = getCommonDefault();
+    }
+    if (!fleetState.inventory || !SLOT_KEYS.every(sk => fleetState.inventory[sk] && typeof fleetState.inventory[sk] === 'object')) {
+      fleetState.inventory = getBlankInventory();
+    }
   } catch (e) {
     fleetState = getBlankState();
   }
@@ -563,6 +864,11 @@ function loadFleet() {
   document.getElementById('almNotify').checked = !!fleetState.alarmCfg.notify;
   document.getElementById('almModal').checked = !!fleetState.alarmCfg.modal;
   renderDropTags();
+  const pool = document.getElementById('pool').value;
+  document.getElementById('commonPanel').style.display = pool === 'common' ? 'block' : 'none';
+  document.getElementById('invPanel').style.display = pool === 'custom' ? 'block' : 'none';
+  renderCommonBuilds();
+  renderInventory();
 }
 
 function saveFleet() {
@@ -827,6 +1133,7 @@ function selectSub(idx) {
     : `首次填入自动设为初始存档`;
   updateRemExpDisplay();
   syncGateCheckboxUI();
+  renderInventory();
   initNodes();
   renderFleetBar();
   calc();
@@ -1199,6 +1506,7 @@ function startVoyage(buildCode, routeStr, sec, expWithBonus) {
     alerted: false
   };
   saveFleet();
+  renderInventory();
 }
 
 function claimVoyage(idx) {
@@ -1394,9 +1702,16 @@ function calc() {
     let avail = [...visitableNodes];
     let rawB = [];
     if (pool === 'custom') {
-      const tk = document.getElementById('cBuild').value.trim().match(/[1-5]改?/g);
-      if (!tk || tk.length !== 4) { alert('部件格式错误'); return; }
-      rawB.push(tk);
+      // 在已有部件 (扣除其他艇航行占用) 范围内枚举全部搭配
+      const ap = getAvailableParts();
+      for (let a of ap.H) for (let b of ap.S) for (let c of ap.BO) for (let d of ap.BR) rawB.push([a, b, c, d]);
+      if (!rawB.length) {
+        const miss = SLOT_KEYS.filter(sk => !ap[sk].length).map(sk => SLOT_NAMES[sk]).join('、');
+        document.getElementById('tBox').innerHTML = `<div style="color:var(--gold);font-size:13px;">⚠️ 已有部件不足以组成一艘潜艇：缺少可用的【${miss}】。请在「当前已有部件」里勾选并填写数量。</div>`;
+        document.getElementById('tb').innerHTML = '';
+        document.getElementById('mobileRankList').innerHTML = '';
+        return;
+      }
     } else if (pool === 'economy') {
       rawB = [
         ['1','1','1','1'], ['1','1','2','1'], ['3','1','1','3'],
@@ -1405,12 +1720,13 @@ function calc() {
       ];
       if (mode === 'surv') rawB.push(['4','2','5','4'], ['4','3','5','4'], ['4','2','4','4']);
     } else if (pool === 'common') {
-      rawB = [
-        ['1','1','1','1'],['1','1','2','1'],['1','1','2','2'],['1','1','2','3'],
-        ['3','1','1','3'],['3','1','2','2'],['3','1','2','3'],['3','1','2','4'],
-        ['4','1','2','3'],['3','1','5','3'],['4','2','5','4'],['4','3','5','4'],
-        ['4','2','4','4'],['4改','2改','5改','4改'],['3改','1改','2改','3改'],['4改','1改','2改','3改']
-      ];
+      rawB = (fleetState.commonBuilds || []).filter(x => x.on).map(x => parseBuildCode(x.c)).filter(Boolean);
+      if (!rawB.length) {
+        document.getElementById('tBox').innerHTML = `<div style="color:var(--gold);font-size:13px;">⚠️ 常用配装列表中没有勾选任何组合，请至少勾选一个。</div>`;
+        document.getElementById('tb').innerHTML = '';
+        document.getElementById('mobileRankList').innerHTML = '';
+        return;
+      }
     } else {
       const ks = pool === 'unmod' ? ['1','2','3','4','5'] : ['1','2','3','4','5','1改','2改','3改','4改','5改'];
       for (let a of ks) for (let b of ks) for (let c of ks) for (let d of ks) rawB.push([a, b, c, d]);
@@ -1420,12 +1736,12 @@ function calc() {
     for (let [a, b, c, d] of rawB) {
       const p1 = H[a], p2 = S[b], p3 = BO[c], p4 = BR[d];
       const cap = p1[5] + p2[5] + p3[5] + p4[5];
-      if (cap > maxCap && pool !== 'custom') continue;
+      if (cap > maxCap) continue;
       const surv = p1[0]+p2[0]+p3[0]+p4[0]+lb[0], ret = p1[1]+p2[1]+p3[1]+p4[1]+lb[1], spd = p1[2]+p2[2]+p3[2]+p4[2]+lb[2], rng = p1[3]+p2[3]+p3[3]+p4[3]+lb[3], fav = p1[4]+p2[4]+p3[4]+p4[4]+lb[4];
       const code = (a+b+c+d).includes('改') ? `${a}-${b}-${c}-${d}` : `${a}${b}${c}${d}`;
       const extraDesc = getExtraPartsDesc(a, b, c, d);
       const affinity = calcPartAffinity(a, b, c, d);
-      const keepAll = ['custom','economy','common'].includes(pool) || MAINSTREAM_EXACT.has(code);
+      const keepAll = ['economy','common'].includes(pool) || (pool === 'custom' && rawB.length <= 64) || MAINSTREAM_EXACT.has(code);
       const key = keepAll ? code : `${Math.floor(spd/5)}_${Math.floor(rng/5)}_${mode==='surv'?Math.floor(surv/10):Math.floor(affinity*5)}`;
       const sc = affinity * 500 + surv * 2 + ret + fav + spd + rng;
       if (!mapB.has(key) || sc > mapB.get(key).sc) {
@@ -1684,6 +2000,7 @@ setInterval(() => {
 window.onload = () => {
   loadFleet();
   selectSub(0);
+  checkNoticeOnLoad();
 };
 </script>
 </body>
