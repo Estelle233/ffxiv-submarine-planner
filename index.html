@@ -317,7 +317,7 @@
             </select>
           </div>
           <div>
-            <label>经验加成口径 (同 Argus)</label>
+            <label>经验加成口径 </label>
             <select id="bonusBasis" onchange="saveFleet();calc()">
               <option value="guaranteed" selected>🔒 保底 (只算收集力最优必中的 +25%)</option>
               <option value="average">🎲 平均 (保底与最高的折中)</option>
@@ -1058,7 +1058,7 @@ function selectDropNode(mid, code, kw) {
   calc();
 }
 
-// 经验加成模型 (与 Argus / SubmarineTracker 一致)：每满足一项 +25%，最多 4 级 (×2.0)
+// 经验加成模型：每满足一项 +25%，最多 4 级 (×2.0)
 //   收集 ≥ 最优门槛 → +1 级 (保底必中)
 //   探索 ≥ 二档 / ≥ 三档 → 各 +1 级 (概率触发)
 //   恩惠 ≥ 门槛 → +1 级，并让探索二档 / 三档再各判定一次
@@ -1087,7 +1087,7 @@ function getBonusBasis() {
   return el && el.value === 'average' ? 'average' : 'guaranteed';
 }
 
-// 单节点经验 (与 Argus 一致，按节点向下取整)
+// 单节点经验
 function nodeExpWithBonus(baseExp, steps) {
   return Math.floor(baseExp * BONUS_STEP_MULT[steps]);
 }
