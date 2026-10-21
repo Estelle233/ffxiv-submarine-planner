@@ -118,6 +118,6 @@
 - **各点掉落物、档内概率、数量，以及紫礁海、南苍茫洋、北洋的门槛**：[submarine.girin.dev](https://submarine.girin.dev/)（玩家上传统计）。
 - **档位触发率、二次探索率**：Masika 的 [Indepth Submarine loot Drop info](https://docs.google.com/spreadsheets/d/1pjZAyxr7nZ82kgUOSrJyWYMppSy2YIjig09V-_g05ec/edit#gid=39234976)。
 - **掉落机制说明**：NGA [5.X 潜水艇从入门到沉船指南](https://ngabbs.com/read.php?tid=23490578)。
-- **平民配装思路**：致敬《蒜女心经》([NGA](https://bbs.nga.cn/read.php?tid=34842903&rand=415))。
+- **平民配装思路**：致敬《蒜女心经》([进阶向潜水艇攻略：开图，练级，毕业配置](https://bbs.nga.cn/read.php?tid=34842903&rand=415))。
 
 > 本工具为玩家自制，与 SQUARE ENIX 无关。FINAL FANTASY XIV © SQUARE ENIX CO., LTD.
